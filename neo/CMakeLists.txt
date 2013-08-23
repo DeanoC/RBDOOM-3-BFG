@@ -15,6 +15,8 @@ option(SDL2
 option(OPENAL
 		"Use OpenAL soft instead of XAudio2" OFF)
 
+option( XINPUT 
+		"Use XInput in Windows for Xbox350 Joypads" OFF )
 if(UNIX)
 	set(OPENAL TRUE)
 endif()
@@ -1063,24 +1065,27 @@ include_directories(
 
 if(MSVC)
 
-	# if(MSVC_VERSION EQUAL 1700)
-		# set(DirectX_LIBRARIES
-			# dinput8
-			# dsound
-			# dxguid
-			# #dxerr
-			# Xinput
-			# xaudio2.lib
-			# )
+	if(MSVC_VERSION EQUAL 1700)
+		set(DirectX_LIBRARIES
+			dinput8
+			dsound
+			dxguid
+#			dxerr
+			)
+		if( XINPUT )
+			list(APPEND DirectX_LIBRARIES Xinput)
+			add_definitions(-DUSE_XINPUT)
+
+		endif()
 		
-		# if(NOT OPENAL)
-			# list(APPEND DirectX_LIBRARIES xaudio2.lib)
-		# endif()
+		if(NOT OPENAL)
+			list(APPEND DirectX_LIBRARIES xaudio2.lib)
+		endif()
 		
-	# else()
+	else()
 		find_package(DirectX REQUIRED)
 		include_directories(${DirectX_INCLUDE_DIR})
-	#endif()
+	endif()
 	
 	if(OPENAL)
 		add_definitions(-DUSE_OPENAL)
