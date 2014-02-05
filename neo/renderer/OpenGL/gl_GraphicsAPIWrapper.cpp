@@ -153,7 +153,7 @@ void GL_DepthBoundsTest( const float zmin, const float zmax )
 	{
 		return;
 	}
-	
+#if !defined( USE_GLES3 )
 	if( zmin == 0.0f && zmax == 0.0f )
 	{
 		qglDisable( GL_DEPTH_BOUNDS_TEST_EXT );
@@ -163,6 +163,7 @@ void GL_DepthBoundsTest( const float zmin, const float zmax )
 		qglEnable( GL_DEPTH_BOUNDS_TEST_EXT );
 		qglDepthBoundsEXT( zmin, zmax );
 	}
+#endif
 }
 
 /*
@@ -269,7 +270,7 @@ void GL_SetDefaultState()
 {
 	RENDERLOG_PRINTF( "--- GL_SetDefaultState ---\n" );
 	
-	qglClearDepth( 1.0f );
+	qglClearDepthf( 1.0f );
 	
 	// make sure our GL state vector is set correctly
 	memset( &backEnd.glState, 0, sizeof( backEnd.glState ) );
@@ -286,8 +287,10 @@ void GL_SetDefaultState()
 	qglDepthFunc( GL_LESS );
 	qglDisable( GL_STENCIL_TEST );
 	qglDisable( GL_POLYGON_OFFSET_FILL );
+#if !defined( USE_GLES3 )
 	qglDisable( GL_POLYGON_OFFSET_LINE );
 	qglPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+#endif
 	
 	// These should never be changed
 	// DG: deprecated in opengl 3.2 and not needed because we don't do fixed function pipeline
@@ -296,7 +299,12 @@ void GL_SetDefaultState()
 	qglEnable( GL_DEPTH_TEST );
 	qglEnable( GL_BLEND );
 	qglEnable( GL_SCISSOR_TEST );
+#if !defined( USE_GLES3 )
 	qglDrawBuffer( GL_BACK );
+#else
+	GLenum back = GL_BACK;
+	qglDrawBuffers( 1, &back );
+#endif
 	qglReadBuffer( GL_BACK );
 	
 	if( r_useScissor.GetBool() )
@@ -458,6 +466,7 @@ void GL_State( uint64 stateBits, bool forceGlState )
 		qglColorMask( r, g, b, a );
 	}
 	
+#if !defined( USE_GLES3 )
 	//
 	// fill/line mode
 	//
@@ -472,6 +481,7 @@ void GL_State( uint64 stateBits, bool forceGlState )
 			qglPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
 		}
 	}
+#endif
 	
 	//
 	// polygon offset
@@ -482,12 +492,16 @@ void GL_State( uint64 stateBits, bool forceGlState )
 		{
 			qglPolygonOffset( backEnd.glState.polyOfsScale, backEnd.glState.polyOfsBias );
 			qglEnable( GL_POLYGON_OFFSET_FILL );
+#if !defined( USE_GLES3 )
 			qglEnable( GL_POLYGON_OFFSET_LINE );
+#endif
 		}
 		else
 		{
 			qglDisable( GL_POLYGON_OFFSET_FILL );
+#if !defined( USE_GLES3 )
 			qglDisable( GL_POLYGON_OFFSET_LINE );
+#endif
 		}
 	}
 	

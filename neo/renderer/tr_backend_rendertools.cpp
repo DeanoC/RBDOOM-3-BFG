@@ -97,6 +97,8 @@ void RB_DrawBounds( const idBounds& bounds )
 	{
 		return;
 	}
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	qglBegin( GL_LINE_LOOP );
 	qglVertex3f( bounds[0][0], bounds[0][1], bounds[0][2] );
 	qglVertex3f( bounds[0][0], bounds[1][1], bounds[0][2] );
@@ -123,6 +125,7 @@ void RB_DrawBounds( const idBounds& bounds )
 	qglVertex3f( bounds[1][0], bounds[1][1], bounds[0][2] );
 	qglVertex3f( bounds[1][0], bounds[1][1], bounds[1][2] );
 	qglEnd();
+#endif
 }
 
 
@@ -133,6 +136,8 @@ RB_SimpleSurfaceSetup
 */
 static void RB_SimpleSurfaceSetup( const drawSurf_t* drawSurf )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	// change the matrix if needed
 	if( drawSurf->space != backEnd.currentSpace )
 	{
@@ -149,6 +154,7 @@ static void RB_SimpleSurfaceSetup( const drawSurf_t* drawSurf )
 					drawSurf->scissorRect.y2 + 1 - drawSurf->scissorRect.y1 );
 		backEnd.currentScissor = drawSurf->scissorRect;
 	}
+#endif
 }
 
 /*
@@ -158,6 +164,8 @@ RB_SimpleWorldSetup
 */
 static void RB_SimpleWorldSetup()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	backEnd.currentSpace = &backEnd.viewDef->worldSpace;
 	
 	
@@ -168,6 +176,7 @@ static void RB_SimpleWorldSetup()
 				backEnd.viewDef->scissor.x2 + 1 - backEnd.viewDef->scissor.x1,
 				backEnd.viewDef->scissor.y2 + 1 - backEnd.viewDef->scissor.y1 );
 	backEnd.currentScissor = backEnd.viewDef->scissor;
+#endif
 }
 
 /*
@@ -182,6 +191,8 @@ stenciling will matter.
 */
 void RB_PolygonClear()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	qglPushMatrix();
 	qglPushAttrib( GL_ALL_ATTRIB_BITS );
 	qglLoadIdentity();
@@ -197,6 +208,7 @@ void RB_PolygonClear()
 	qglEnd();
 	qglPopAttrib();
 	qglPopMatrix();
+#endif
 }
 
 /*
@@ -220,6 +232,8 @@ Debugging tool to see what values are in the stencil buffer
 */
 void RB_ScanStencilBuffer()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int		counts[256];
 	int		i;
 	byte*	stencilReadback;
@@ -245,6 +259,7 @@ void RB_ScanStencilBuffer()
 			common->Printf( "%i: %i\n", i, counts[i] );
 		}
 	}
+#endif
 }
 
 
@@ -257,6 +272,8 @@ Print an overdraw count based on stencil index values
 */
 static void RB_CountStencilBuffer()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int		count;
 	int		i;
 	byte*	stencilReadback;
@@ -275,6 +292,7 @@ static void RB_CountStencilBuffer()
 	
 	// print some stats (not supposed to do from back end in SMP...)
 	common->Printf( "overdraw: %5.1f\n", ( float )count / ( renderSystem->GetWidth() * renderSystem->GetHeight() ) );
+#endif
 }
 
 /*
@@ -288,6 +306,8 @@ stencil buffer.  Stencil of 0 = black, 1 = red, 2 = green,
 */
 static void R_ColorByStencilBuffer()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int		i;
 	static float	colors[8][3] =
 	{
@@ -315,6 +335,7 @@ static void R_ColorByStencilBuffer()
 	}
 	
 	qglStencilFunc( GL_ALWAYS, 0, 255 );
+#endif
 }
 
 //======================================================================
@@ -326,6 +347,8 @@ RB_ShowOverdraw
 */
 void RB_ShowOverdraw()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	const idMaterial* 	material;
 	int					i;
 	drawSurf_t * *		drawSurfs;
@@ -404,6 +427,7 @@ void RB_ShowOverdraw()
 			const_cast<viewDef_t*>( backEnd.viewDef )->numDrawSurfs += interactions;
 			break;
 	}
+#endif
 }
 
 /*
@@ -417,6 +441,8 @@ the resulting color shading from red at 0 to green at 128 to blue at 255
 */
 static void RB_ShowIntensity()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	byte*	colorReadback;
 	int		i, j, c;
 	
@@ -470,6 +496,7 @@ static void RB_ShowIntensity()
 	qglDrawPixels( renderSystem->GetWidth(), renderSystem->GetHeight(), GL_RGBA , GL_UNSIGNED_BYTE, colorReadback );
 	
 	R_StaticFree( colorReadback );
+#endif
 }
 
 
@@ -482,6 +509,8 @@ Draw the depth buffer as colors
 */
 static void RB_ShowDepthBuffer()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	void*	depthReadback;
 	
 	if( !r_showDepth.GetBool() )
@@ -521,6 +550,7 @@ static void RB_ShowDepthBuffer()
 	
 	qglDrawPixels( renderSystem->GetWidth(), renderSystem->GetHeight(), GL_RGBA , GL_UNSIGNED_BYTE, depthReadback );
 	R_StaticFree( depthReadback );
+#endif
 }
 
 /*
@@ -533,6 +563,8 @@ based on how many lights are effecting it
 */
 static void RB_ShowLightCount()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int		i;
 	const drawSurf_t*	surf;
 	const viewLight_t*	vLight;
@@ -577,6 +609,7 @@ static void RB_ShowLightCount()
 	{
 		RB_CountStencilBuffer();
 	}
+#endif
 }
 
 /*
@@ -604,6 +637,8 @@ RB_EnterWeaponDepthHack
 */
 static void RB_EnterWeaponDepthHack()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	float	matrix[16];
 	
 	memcpy( matrix, backEnd.viewDef->projectionMatrix, sizeof( matrix ) );
@@ -617,6 +652,7 @@ static void RB_EnterWeaponDepthHack()
 	qglMatrixMode( GL_PROJECTION );
 	qglLoadMatrixf( matrix );
 	qglMatrixMode( GL_MODELVIEW );
+#endif
 }
 
 /*
@@ -626,6 +662,8 @@ RB_EnterModelDepthHack
 */
 static void RB_EnterModelDepthHack( float depth )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	float matrix[16];
 	
 	memcpy( matrix, backEnd.viewDef->projectionMatrix, sizeof( matrix ) );
@@ -635,6 +673,7 @@ static void RB_EnterModelDepthHack( float depth )
 	qglMatrixMode( GL_PROJECTION );
 	qglLoadMatrixf( matrix );
 	qglMatrixMode( GL_MODELVIEW );
+#endif
 }
 
 /*
@@ -644,9 +683,12 @@ RB_LeaveDepthHack
 */
 static void RB_LeaveDepthHack()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	qglMatrixMode( GL_PROJECTION );
 	qglLoadMatrixf( backEnd.viewDef->projectionMatrix );
 	qglMatrixMode( GL_MODELVIEW );
+#endif
 }
 
 /*
@@ -658,7 +700,10 @@ does a glLoadMatrixf after optionally applying the low-latency bypass matrix
 */
 static void RB_LoadMatrixWithBypass( const float m[16] )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	glLoadMatrixf( m );
+#endif
 }
 
 /*
@@ -755,6 +800,8 @@ static void RB_ShowSilhouette()
 	{
 		return;
 	}
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	
 	//
 	// clear all triangle edges to black
@@ -797,7 +844,7 @@ static void RB_ShowSilhouette()
 				}
 				
 				// RB: 64 bit fixes, changed GLuint to GLintptrARB
-				qglBindBufferARB( GL_ARRAY_BUFFER_ARB, ( GLintptrARB )vertexBuffer.GetAPIObject() );
+				qglBindBuffer( GL_ARRAY_BUFFER, ( GLintptr )vertexBuffer.GetAPIObject() );
 				GLintptrARB vertOffset = vertexBuffer.GetOffset();
 				// RB end
 				
@@ -829,6 +876,7 @@ static void RB_ShowSilhouette()
 			}
 		}
 	}
+#endif
 	
 	GL_State( GLS_DEFAULT );
 	GL_Color( 1, 1, 1 );
@@ -844,6 +892,8 @@ Debugging tool
 */
 static void RB_ShowTris( drawSurf_t** drawSurfs, int numDrawSurfs )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 
 	modelTrace_t mt;
 	idVec3 end;
@@ -886,6 +936,7 @@ static void RB_ShowTris( drawSurf_t** drawSurfs, int numDrawSurfs )
 	{
 		GL_Cull( CT_FRONT_SIDED );
 	}
+#endif
 }
 
 /*
@@ -949,6 +1000,8 @@ static void RB_ShowViewEntitys( viewEntity_t* vModels )
 	{
 		return;
 	}
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	if( r_showViewEntitys.GetInteger() >= 2 )
 	{
 		common->Printf( "view entities: " );
@@ -1032,6 +1085,7 @@ static void RB_ShowViewEntitys( viewEntity_t* vModels )
 			}
 		}
 	}
+#endif
 }
 
 /*
@@ -1044,6 +1098,8 @@ green if they have a negative texture area, or blue if degenerate area
 */
 static void RB_ShowTexturePolarity( drawSurf_t** drawSurfs, int numDrawSurfs )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int		i, j;
 	drawSurf_t*	drawSurf;
 	const srfTriangles_t*	tri;
@@ -1112,6 +1168,7 @@ static void RB_ShowTexturePolarity( drawSurf_t** drawSurfs, int numDrawSurfs )
 	}
 	
 	GL_State( GLS_DEFAULT );
+#endif
 }
 
 /*
@@ -1123,6 +1180,8 @@ Shade materials that are using unsmoothed tangents
 */
 static void RB_ShowUnsmoothedTangents( drawSurf_t** drawSurfs, int numDrawSurfs )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int		i, j;
 	drawSurf_t*	drawSurf;
 	const srfTriangles_t*	tri;
@@ -1166,6 +1225,7 @@ static void RB_ShowUnsmoothedTangents( drawSurf_t** drawSurfs, int numDrawSurfs 
 	}
 	
 	GL_State( GLS_DEFAULT );
+#endif
 }
 
 /*
@@ -1180,6 +1240,8 @@ Shade a triangle by the RGB colors of its tangent space
 */
 static void RB_ShowTangentSpace( drawSurf_t** drawSurfs, int numDrawSurfs )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int		i, j;
 	drawSurf_t*	drawSurf;
 	const srfTriangles_t*	tri;
@@ -1234,6 +1296,7 @@ static void RB_ShowTangentSpace( drawSurf_t** drawSurfs, int numDrawSurfs )
 	}
 	
 	GL_State( GLS_DEFAULT );
+#endif
 }
 
 /*
@@ -1245,6 +1308,8 @@ Draw each triangle with the solid vertex colors
 */
 static void RB_ShowVertexColor( drawSurf_t** drawSurfs, int numDrawSurfs )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int		i, j;
 	drawSurf_t*	drawSurf;
 	const srfTriangles_t*	tri;
@@ -1281,6 +1346,7 @@ static void RB_ShowVertexColor( drawSurf_t** drawSurfs, int numDrawSurfs )
 	}
 	
 	GL_State( GLS_DEFAULT );
+#endif
 }
 
 /*
@@ -1292,6 +1358,8 @@ Debugging tool
 */
 static void RB_ShowNormals( drawSurf_t** drawSurfs, int numDrawSurfs )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int			i, j;
 	drawSurf_t*	drawSurf;
 	idVec3		end;
@@ -1391,6 +1459,7 @@ static void RB_ShowNormals( drawSurf_t** drawSurfs, int numDrawSurfs )
 			}
 		}
 	}
+#endif
 }
 
 #if 0 // compiler warning
@@ -1476,6 +1545,8 @@ Draw texture vectors in the center of each triangle
 */
 static void RB_ShowTextureVectors( drawSurf_t** drawSurfs, int numDrawSurfs )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	if( r_showTextureVectors.GetFloat() == 0.0f )
 	{
 		return;
@@ -1567,6 +1638,7 @@ static void RB_ShowTextureVectors( drawSurf_t** drawSurfs, int numDrawSurfs )
 		
 		qglEnd();
 	}
+#endif
 }
 
 /*
@@ -1578,6 +1650,8 @@ Draw lines from each vertex to the dominant triangle center
 */
 static void RB_ShowDominantTris( drawSurf_t** drawSurfs, int numDrawSurfs )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int			i, j;
 	drawSurf_t*	drawSurf;
 	const srfTriangles_t*	tri;
@@ -1633,6 +1707,7 @@ static void RB_ShowDominantTris( drawSurf_t** drawSurfs, int numDrawSurfs )
 		qglEnd();
 	}
 	qglDisable( GL_POLYGON_OFFSET_LINE );
+#endif
 }
 
 /*
@@ -1644,6 +1719,8 @@ Debugging tool
 */
 static void RB_ShowEdges( drawSurf_t** drawSurfs, int numDrawSurfs )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int			i, j, k, m, n, o;
 	drawSurf_t*	drawSurf;
 	const srfTriangles_t*	tri;
@@ -1742,6 +1819,7 @@ static void RB_ShowEdges( drawSurf_t** drawSurfs, int numDrawSurfs )
 		}
 		qglEnd();
 	}
+#endif
 }
 
 /*
@@ -1756,6 +1834,8 @@ r_showLights 3	: also draw edges of each volume
 */
 static void RB_ShowLights()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	if( !r_showLights.GetInteger() )
 	{
 		return;
@@ -1812,6 +1892,7 @@ static void RB_ShowLights()
 	qglLoadMatrixf( backEnd.viewDef->projectionMatrix );
 	qglMatrixMode( GL_MODELVIEW );
 	qglLoadIdentity();
+#endif
 }
 
 /*
@@ -1962,6 +2043,8 @@ RB_DrawText
 */
 static void RB_DrawText( const char* text, const idVec3& origin, float scale, const idVec4& color, const idMat3& viewAxis, const int align )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	renderProgManager.BindShader_Color();
 	
 	
@@ -2048,6 +2131,7 @@ static void RB_DrawText( const char* text, const idVec3& origin, float scale, co
 		
 		qglEnd();
 	}
+#endif
 }
 
 /*
@@ -2183,6 +2267,8 @@ RB_ShowDebugLines
 */
 void RB_ShowDebugLines()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int			i;
 	int			width;
 	debugLine_t*	line;
@@ -2255,6 +2341,7 @@ void RB_ShowDebugLines()
 	
 	qglLineWidth( 1 );
 	GL_State( GLS_DEFAULT );
+#endif
 }
 
 /*
@@ -2320,6 +2407,8 @@ RB_ShowDebugPolygons
 */
 void RB_ShowDebugPolygons()
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int				i, j;
 	debugPolygon_t*	poly;
 	
@@ -2376,6 +2465,7 @@ void RB_ShowDebugPolygons()
 	}
 	
 	GL_State( GLS_DEFAULT );
+#endif
 }
 
 /*
@@ -2555,6 +2645,8 @@ void RB_TestGamma()
 			}
 		}
 	}
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	
 	qglLoadIdentity();
 	
@@ -2570,6 +2662,7 @@ void RB_TestGamma()
 	qglPopMatrix();
 	qglEnable( GL_TEXTURE_2D );
 	qglMatrixMode( GL_MODELVIEW );
+#endif
 }
 
 
@@ -2615,6 +2708,8 @@ static void RB_TestGammaBias()
 		}
 	}
 	
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	qglLoadIdentity();
 	qglMatrixMode( GL_PROJECTION );
 	GL_State( GLS_DEPTHFUNC_ALWAYS );
@@ -2628,6 +2723,7 @@ static void RB_TestGammaBias()
 	qglPopMatrix();
 	qglEnable( GL_TEXTURE_2D );
 	qglMatrixMode( GL_MODELVIEW );
+#endif
 }
 
 /*
@@ -2721,10 +2817,13 @@ void RB_TestImage()
 	float projMatrixTranspose[16];
 	R_MatrixTranspose( finalOrtho, projMatrixTranspose );
 	renderProgManager.SetRenderParms( RENDERPARM_MVPMATRIX_X, projMatrixTranspose, 4 );
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	qglMatrixMode( GL_PROJECTION );
 	qglLoadMatrixf( finalOrtho );
 	qglMatrixMode( GL_MODELVIEW );
 	qglLoadIdentity();
+#endif
 	
 	// Set Color
 	GL_Color( 1, 1, 1, 1 );
@@ -2759,6 +2858,8 @@ RB_DrawExpandedTriangles
 */
 void RB_DrawExpandedTriangles( const srfTriangles_t* tri, const float radius, const idVec3& vieworg )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int i, j, k;
 	idVec3 dir[6], normal, point;
 	
@@ -2819,6 +2920,7 @@ void RB_DrawExpandedTriangles( const srfTriangles_t* tri, const float radius, co
 		
 		qglEnd();
 	}
+#endif
 }
 
 /*
@@ -2832,6 +2934,8 @@ FIXME: not thread safe!
 */
 void RB_ShowTrace( drawSurf_t** drawSurfs, int numDrawSurfs )
 {
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 	int						i;
 	const srfTriangles_t*	tri;
 	const drawSurf_t*		surf;
@@ -2911,6 +3015,7 @@ void RB_ShowTrace( drawSurf_t** drawSurfs, int numDrawSurfs )
 			RB_DrawBounds( idBounds( hit.point ).Expand( 1 ) );
 		}
 	}
+#endif
 }
 
 /*

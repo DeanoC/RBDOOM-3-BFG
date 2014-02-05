@@ -266,6 +266,9 @@ static void R_AddSingleLight( viewLight_t* vLight )
 	
 	// this bool array will be set true whenever the entity will visibly interact with the light
 	vLight->entityInteractionState = ( byte* )R_ClearedFrameAlloc( light->world->entityDefs.Num() * sizeof( vLight->entityInteractionState[0] ), FRAME_ALLOC_INTERACTION_STATE );
+
+	assert( light->world->interactionTable );
+	assert( light->index < light->world->interactionTableHeight );
 	
 	const bool lightCastsShadows = light->LightCastsShadows();
 	idInteraction * * const interactionTableRow = light->world->interactionTable + light->index * light->world->interactionTableWidth;
@@ -290,13 +293,16 @@ static void R_AddSingleLight( viewLight_t* vLight )
 		{
 			idRenderEntityLocal* edef = eref->entity;
 			
-			if( vLight->entityInteractionState[ edef->index ] != viewLight_t::INTERACTION_UNCHECKED )
+			assert( edef->index < light->world->interactionTableWidth );
+
+
+			if( vLight->entityInteractionState[ edef->index ] != viewLight_t::INTERACTION_UNCHECKED  )
 			{
 				continue;
 			}
 			// until proven otherwise
 			vLight->entityInteractionState[ edef->index ] = viewLight_t::INTERACTION_NO;
-			
+
 			// The table is updated at interaction::AllocAndLink() and interaction::UnlinkAndFree()
 			const idInteraction* inter = interactionTableRow[ edef->index ];
 			
@@ -420,7 +426,7 @@ static void R_AddSingleLight( viewLight_t* vLight )
 	//--------------------------------------------
 	// add the prelight shadows for the static world geometry
 	//--------------------------------------------
-	if( light->parms.prelightModel != NULL )
+	if( false && light->parms.prelightModel != NULL )
 	{
 		srfTriangles_t* tri = light->parms.prelightModel->Surface( 0 )->geometry;
 		

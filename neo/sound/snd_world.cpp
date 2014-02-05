@@ -859,6 +859,7 @@ idSoundWorldLocal::StartWritingDemo
 */
 void idSoundWorldLocal::StartWritingDemo( idDemoFile* demo )
 {
+	/* TODO Deano Sound recording disable for now
 	writeDemo = demo;
 	
 	writeDemo->WriteInt( DS_SOUND );
@@ -866,6 +867,7 @@ void idSoundWorldLocal::StartWritingDemo( idDemoFile* demo )
 	
 	// use the normal save game code to archive all the emitters
 	WriteToSaveGame( writeDemo );
+*/
 }
 
 /*
@@ -920,6 +922,7 @@ void idSoundWorldLocal::ProcessDemoCommand( idDemoFile* readDemo )
 		break;
 		case SCMD_ALLOC_EMITTER:
 		{
+			// never generated?!?
 			readDemo->ReadInt( index );
 			if( index < 1 || index > emitters.Num() )
 			{
@@ -948,6 +951,10 @@ void idSoundWorldLocal::ProcessDemoCommand( idDemoFile* readDemo )
 			soundShaderParms_t parms;
 			
 			readDemo->ReadInt( index );
+			if( index == emitters.Num() ) {
+				break;
+			}
+
 			readDemo->ReadVec3( origin );
 			readDemo->ReadInt( listenerId );
 			readDemo->ReadFloat( parms.minDistance );
@@ -967,6 +974,16 @@ void idSoundWorldLocal::ProcessDemoCommand( idDemoFile* readDemo )
 			int			shaderFlags;
 			
 			readDemo->ReadInt( index );
+			if( index < 1 || index > emitters.Num() )
+			{
+				common->Error( "idSoundWorldLocal::ProcessDemoCommand: bad emitter number" );
+			}
+			if( index == emitters.Num() )
+			{
+				// append a brand new one
+				AllocSoundEmitter();
+			}
+
 			shader = declManager->FindSound( readDemo->ReadHashString() );
 			readDemo->ReadInt( channel );
 			readDemo->ReadFloat( diversity );

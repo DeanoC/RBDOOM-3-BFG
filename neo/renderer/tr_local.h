@@ -651,6 +651,8 @@ struct glstate_t
 	uintptr_t			currentVertexBuffer;
 	uintptr_t			currentIndexBuffer;
 	// RB end
+	// DEANO: Add currentBaseVertex to support GLES3 which doesn't have base vertex draw calls
+	uint32				currentBaseVertexOffset;
 	
 	float				polyOfsScale;
 	float				polyOfsBias;

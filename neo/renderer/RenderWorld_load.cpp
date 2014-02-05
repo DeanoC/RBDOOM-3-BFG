@@ -757,6 +757,8 @@ void idRenderWorldLocal::FreeDefs()
 	{
 		R_StaticFree( interactionTable );
 		interactionTable = NULL;
+		interactionTableWidth = 0;
+		interactionTableHeight = 0;
 	}
 	
 	// free all lightDefs

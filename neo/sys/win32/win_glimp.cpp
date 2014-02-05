@@ -42,6 +42,7 @@ If you have questions concerning this license or the applicable additional terms
 */
 #pragma hdrstop
 #include "precompiled.h"
+#if defined( _WIN32 )
 
 #include "win_local.h"
 #include "rc/doom_resource.h"
@@ -1537,3 +1538,5 @@ GLExtension_t GLimp_ExtensionPointer( const char* name )
 	
 	return proc;
 }
+
+#endif

@@ -30,6 +30,11 @@ If you have questions concerning this license or the applicable additional terms
 #include "precompiled.h"
 
 #include "tr_local.h"
+#include "DXT/DXTCodec.h"
+#include "Color/ColorSpace.h"
+
+#define IGNORE_DXT_SUPPORT 0
+#define USE_EXTERNAL_ETC2_COMPRESSOR 1
 
 /*
 ================
@@ -390,11 +395,34 @@ void idImage::ActuallyLoadImage( bool fromBackEnd )
 	}
 	const bimageFile_t& header = im.GetFileHeader();
 	
-	if( ( fileSystem->InProductionMode() && binaryFileTime != FILE_NOT_FOUND_TIMESTAMP ) || ( ( binaryFileTime != FILE_NOT_FOUND_TIMESTAMP )
+	if( 	( fileSystem->InProductionMode() &&
+			binaryFileTime != FILE_NOT_FOUND_TIMESTAMP
+#if defined( USE_GLES3 )
+			&& !(
+						( header.format == FMT_RGB565 )
+#if IGNORE_DXT_SUPPORT == 1
+					|| 	( header.format == FMT_DXT1 )
+					|| ( header.format == FMT_DXT5 )
+#endif
+				)
+#endif
+			)
+		||
+			( ( binaryFileTime != FILE_NOT_FOUND_TIMESTAMP )
 			&& ( header.colorFormat == opts.colorFormat )
 			&& ( header.format == opts.format )
 			&& ( header.textureType == opts.textureType )
-																							) )
+#if defined( USE_GLES3 )
+			&& !(
+						( header.format == FMT_RGB565 )
+#if IGNORE_DXT_SUPPORT == 1
+					|| 	( header.format == FMT_DXT1 )
+					|| ( header.format == FMT_DXT5 )
+#endif
+				)
+#endif
+		)
+	)
 	{
 		opts.width = header.width;
 		opts.height = header.height;
@@ -445,7 +473,124 @@ void idImage::ActuallyLoadImage( bool fromBackEnd )
 			
 			// load the full specification, and perform any image program calculations
 			R_LoadImageProgram( GetName(), &pic, &width, &height, &sourceFileTime, &usage );
-			
+			if ( header.format == FMT_RGB565 ) {
+				// if this is a binary replacement hack for GLES3 change the format
+				if( pic == NULL && binaryFileTime != FILE_NOT_FOUND_TIMESTAMP ) {
+					int size = 0;
+
+					for( int i=0; i < header.numLevels; ++i ) {
+						const bimageImage_t& imgl = im.GetImageHeader( i );
+						size += imgl.width * imgl.height * 4;
+					}
+
+					pic = (byte*) Mem_Alloc( size, TAG_TEMP );
+					uint32* dst = (uint32*)pic;
+
+					for( int i=0; i < header.numLevels; ++i ) {
+						const bimageImage_t& img = im.GetImageHeader( i );
+						const byte* data = im.GetImageData( i );
+
+						for( int j = 0;j < img.width * img.height; ++j ) {
+							// input as 16 bit RGB565
+							uint16 sdata = (data[ (j*2) + 0 ] << 8) | data[ (j*2) + 1 ];
+							// expand to 32 bit RGBA
+							uint8 wdata[4];
+							wdata[0] = 	((sdata & 0xF800) >> 11) << 3; //R
+							wdata[1] = 	((sdata & 0x07E0) >> 5) << 2;  //G
+							wdata[2] = 	((sdata & 0x001F) >> 0) << 3;  //B
+							wdata[3] = 	0xFF;					  //A
+
+							dst[ j ] = *((uint32*)wdata);
+
+						}
+						dst += img.width * img.height;
+					}
+					width = header.width;
+					height = header.height;
+					opts.format = FMT_RGBA8;
+				}
+			} else	if ( header.format == FMT_DXT1 ) {
+				// if this is a binary replacement hack for GLES3 change the format
+				opts.format = FMT_RGBA8;
+
+				if( pic == NULL && binaryFileTime != FILE_NOT_FOUND_TIMESTAMP ) {
+
+					idDxtDecoder decoder;
+					int size = 0;
+					for( int i=0; i < header.numLevels; ++i ) {
+						const bimageImage_t& imgl = im.GetImageHeader( i );
+						size += ((imgl.width+3)&~3) * ((imgl.height+3)&~3) * 4;
+					}
+
+					pic = (byte*) Mem_Alloc( size, TAG_TEMP );
+					byte* dst = pic;
+
+					for( int i=0; i < header.numLevels; ++i ) {
+						const bimageImage_t& img = im.GetImageHeader( i );
+						const byte* data = im.GetImageData( i );
+						switch( header.colorFormat ) {
+						case CFM_DEFAULT:
+						case CFM_GREEN_ALPHA:
+							decoder.DecompressImageDXT1( data, dst, img.width, img.height );
+							break;
+						case CFM_NORMAL_DXT5:
+						case CFM_YCOCG_DXT5:
+							assert( false );
+							break;
+						}
+						if( header.colorFormat == CFM_GREEN_ALPHA ) {
+							for( int j = 0;j < img.width * img.height; ++j ) {
+								dst[ (j * 4) + 3 ] = dst[ (j * 4) + 1 ];
+							}
+						}
+
+						dst += ((img.width+3)&~3) * ((img.height+3)&~3) * 4;
+					}
+					width =  ((header.width+3)&~3);
+					height =  ((header.height+3)&~3);
+				}
+			} else if ( header.format == FMT_DXT5 ) {
+				// if this is a binary replacement hack for GLES3 change the format
+				opts.format = FMT_RGBA8;
+
+				if( pic == NULL && binaryFileTime != FILE_NOT_FOUND_TIMESTAMP ) {
+					idDxtDecoder decoder;
+					int size = 0;
+					for( int i=0; i < header.numLevels; ++i ) {
+						const bimageImage_t& imgl = im.GetImageHeader( i );
+						size += ((imgl.width+3)&~3) * ((imgl.height+3)&~3) * 4;
+					}
+					pic = (byte*) Mem_Alloc( size, TAG_TEMP );
+					byte* dst = pic;
+					for( int i=0; i < header.numLevels; ++i ) {
+						const bimageImage_t& img = im.GetImageHeader( i );
+						const byte* data = im.GetImageData( i );
+						switch( header.colorFormat ) {
+						case CFM_DEFAULT:
+						case CFM_GREEN_ALPHA:
+							decoder.DecompressImageDXT5( data, dst, img.width, img.height );
+							break;
+						case CFM_NORMAL_DXT5:
+							decoder.DecompressNormalMapDXT5( data, dst, img.width, img.height );
+							break;
+						case CFM_YCOCG_DXT5:
+							decoder.DecompressYCoCgDXT5( data, dst, img.width, img.height );
+							idColorSpace::ConvertCoCgSYToRGB( dst, dst, img.width, img.height );
+							break;
+						}
+						if( header.colorFormat == CFM_GREEN_ALPHA ) {
+							for( int j = 0;j < img.width * img.height; ++j ) {
+								dst[ (j * 4) + 3 ] = dst[ (j * 4) + 1 ];
+							}
+						}
+
+						dst += ((img.width+3)&~3) * ((img.height+3)&~3) * 4;
+					}
+					width =  ((header.width+3)&~3);
+					height =  ((header.height+3)&~3);
+				}
+			}
+
 			if( pic == NULL )
 			{
 				idLib::Warning( "Couldn't load image: %s : %s", GetName(), generatedName.c_str() );
@@ -467,12 +612,51 @@ void idImage::ActuallyLoadImage( bool fromBackEnd )
 				return;
 			}
 			
+			bimageFile_t origHeader = header;
 			opts.width = width;
 			opts.height = height;
 			opts.numLevels = 0;
 			DeriveOpts();
 			im.Load2DFromMemory( opts.width, opts.height, pic, opts.numLevels, opts.format, opts.colorFormat, opts.gammaMips );
+
+#if USE_EXTERNAL_ETC2_COMPRESSOR
+
+			byte* src = pic;
+			idStr origFormat;
+			switch( origHeader.format ) {
+			case FMT_RGBA8: origFormat = "_RGBA8"; break;
+			case FMT_XRGB8: origFormat = "_XRGB8"; break;
+			case FMT_ALPHA: origFormat = "_ALPHA"; break;
+			case FMT_L8A8: origFormat = "_L8A8"; break;
+			case FMT_LUM8: origFormat = "_LUM8"; break;
+			case FMT_INT8: origFormat = "_INT8"; break;
+			case FMT_DXT1: origFormat = "_DXT1"; break;
+			case FMT_DXT5: origFormat = "_DXT5"; break;
+			case FMT_DEPTH: origFormat = "_DEPTH"; break;
+			case FMT_X16: origFormat = "_X16"; break;
+			case FMT_Y16_X16: origFormat = "_Y16_X16"; break;
+			case FMT_RGB565: origFormat = "_DXT5"; break;
+			default: origFormat = ""; break;
+				break;
+			}
+
+			// NOTE: currently let doom3 not etcpack do the mip map generation
+			// int i = 0; for etcpack to do it (also modify compressGenerated)
+			for( int i=0; i < header.numLevels; ++i )
+			{
+				const bimageImage_t& imgl = im.GetImageHeader( i );
+
+				idStr tgaFileName;
+				tgaFileName.Format( "generated/images/%s_%i%s.tga", GetName(), i, origFormat.c_str() );
+				R_WriteTGA( tgaFileName, src, ((imgl.width+3)&~3), ((imgl.height+3)&~3), false, "fs_basepath" );
+
+				src += ((imgl.width+3)&~3) * ((imgl.height+3)&~3) * 4;
+			}
 			
+//			Sys_DoStartProcess( "" )
+
+#endif
+
 			Mem_Free( pic );
 		}
 		binaryFileTime = im.WriteGeneratedFile( sourceFileTime );
@@ -517,7 +701,8 @@ void idImage::Bind()
 		if( tmu->current2DMap != texnum )
 		{
 			tmu->current2DMap = texnum;
-			qglBindMultiTextureEXT( GL_TEXTURE0_ARB + texUnit, GL_TEXTURE_2D, texnum );
+			qglActiveTexture( GL_TEXTURE0 + texUnit );
+			qglBindTexture ( GL_TEXTURE_2D, texnum );
 		}
 	}
 	else if( opts.textureType == TT_CUBIC )
@@ -525,7 +710,8 @@ void idImage::Bind()
 		if( tmu->currentCubeMap != texnum )
 		{
 			tmu->currentCubeMap = texnum;
-			qglBindMultiTextureEXT( GL_TEXTURE0_ARB + texUnit, GL_TEXTURE_CUBE_MAP_EXT, texnum );
+			qglActiveTexture( GL_TEXTURE0 + texUnit );
+			qglBindTexture ( GL_TEXTURE_CUBE_MAP, texnum );
 		}
 	}
 	
@@ -554,7 +740,7 @@ void idImage::CopyFramebuffer( int x, int y, int imageWidth, int imageHeight )
 {
 
 
-	qglBindTexture( ( opts.textureType == TT_CUBIC ) ? GL_TEXTURE_CUBE_MAP_EXT : GL_TEXTURE_2D, texnum );
+	qglBindTexture( ( opts.textureType == TT_CUBIC ) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, texnum );
 	
 	qglReadBuffer( GL_BACK );
 	
@@ -579,7 +765,7 @@ CopyDepthbuffer
 */
 void idImage::CopyDepthbuffer( int x, int y, int imageWidth, int imageHeight )
 {
-	qglBindTexture( ( opts.textureType == TT_CUBIC ) ? GL_TEXTURE_CUBE_MAP_EXT : GL_TEXTURE_2D, texnum );
+	qglBindTexture( ( opts.textureType == TT_CUBIC ) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, texnum );
 	
 	opts.width = imageWidth;
 	opts.height = imageHeight;
@@ -814,6 +1000,6 @@ void idImage::SetSamplerState( textureFilter_t tf, textureRepeat_t tr )
 	}
 	filter = tf;
 	repeat = tr;
-	qglBindTexture( ( opts.textureType == TT_CUBIC ) ? GL_TEXTURE_CUBE_MAP_EXT : GL_TEXTURE_2D, texnum );
+	qglBindTexture( ( opts.textureType == TT_CUBIC ) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, texnum );
 	SetTexParameters();
 }

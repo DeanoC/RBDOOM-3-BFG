@@ -15,8 +15,9 @@ option(SDL2
 option(OPENAL
 		"Use OpenAL soft instead of XAudio2" OFF)
 
-option( XINPUT 
-		"Use XInput in Windows for Xbox350 Joypads" OFF )
+option(GLES3
+		"Use OpenGL ES3 path instead of OpenGL" ON )
+
 if(UNIX)
 	set(OPENAL TRUE)
 endif()
@@ -161,6 +162,13 @@ endif()
 #if(STANDALONE)
 #	add_definitions(-DSTANDALONE)
 #endif()
+
+if( GLES3 )
+	message( "Using GLES3\n" )
+	add_definitions( -DUSE_GLES3 )
+	include_directories( ${CMAKE_CURRENT_SOURCE_DIR}/../../../emu/inc)
+else( GLES3 )
+endif( GLES3 )
 
 add_subdirectory(idlib)
 
@@ -353,7 +361,7 @@ file(GLOB ZLIB_SOURCES libs/zlib/*.c)
 
 file(GLOB MINIZIP_INCLUDES libs/zlib/minizip/*.h)
 file(GLOB MINIZIP_SOURCES libs/zlib/minizip/*.c libs/zlib/minizip/*.cpp)
-	
+
 set(GLEW_INCLUDES
 	libs/glew/include/GL/glew.h)
 	
@@ -1065,27 +1073,24 @@ include_directories(
 
 if(MSVC)
 
-	if(MSVC_VERSION EQUAL 1700)
-		set(DirectX_LIBRARIES
-			dinput8
-			dsound
-			dxguid
-#			dxerr
-			)
-		if( XINPUT )
-			list(APPEND DirectX_LIBRARIES Xinput)
-			add_definitions(-DUSE_XINPUT)
-
-		endif()
+	# if(MSVC_VERSION EQUAL 1700)
+		# set(DirectX_LIBRARIES
+			# dinput8
+			# dsound
+			# dxguid
+			# #dxerr
+			# Xinput
+			# xaudio2.lib
+			# )
 		
-		if(NOT OPENAL)
-			list(APPEND DirectX_LIBRARIES xaudio2.lib)
-		endif()
+		# if(NOT OPENAL)
+			# list(APPEND DirectX_LIBRARIES xaudio2.lib)
+		# endif()
 		
-	else()
+	# else()
 		find_package(DirectX REQUIRED)
 		include_directories(${DirectX_INCLUDE_DIR})
-	endif()
+	#endif()
 	
 	if(OPENAL)
 		add_definitions(-DUSE_OPENAL)
@@ -1123,7 +1128,7 @@ if(MSVC)
 			${DOOMCLASSIC_SOURCES}
 			${TIMIDITY_SOURCES})
 	endif()
-	
+		
 	if(USE_MFC_TOOLS)
 		
 		include_directories(libs/atlmfc/include)
@@ -1153,7 +1158,7 @@ if(MSVC)
 			${EDITOR_SOUND_INCLUDES} ${EDITOR_SOUND_SOURCES})
 	endif()
 	
-	list(APPEND RBDOOM3_INCLUDES
+	list(APPEND RBDOOM3_INLCUDES
 		${SYS_INCLUDES} 
 		${WIN32_INCLUDES})
 		
@@ -1342,7 +1347,7 @@ else()
 	
 	# make sure this is run after creating idlib
 	add_dependencies(precomp_header_rbdoom3bfg idlib)
-	
+
 	add_executable(RBDoom3BFG WIN32 ${RBDOOM3_SOURCES})
 	
 	# make sure precompiled header is created before executable is compiled

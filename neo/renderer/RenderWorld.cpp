@@ -241,7 +241,7 @@ qhandle_t idRenderWorldLocal::AddEntityDef( const renderEntity_t* re )
 	{
 		entityHandle = entityDefs.Append( NULL );
 		
-		if( interactionTable && entityDefs.Num() > interactionTableWidth )
+		if( entityDefs.Num() > interactionTableWidth )
 		{
 			ResizeInteractionTable();
 		}
@@ -452,7 +452,7 @@ qhandle_t idRenderWorldLocal::AddLightDef( const renderLight_t* rlight )
 	if( lightHandle == -1 )
 	{
 		lightHandle = lightDefs.Append( NULL );
-		if( interactionTable && lightDefs.Num() > interactionTableHeight )
+		if( lightDefs.Num() > interactionTableHeight )
 		{
 			ResizeInteractionTable();
 		}

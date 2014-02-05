@@ -1189,7 +1189,7 @@ void idCommonLocal::Init( int argc, const char* const* argv, const char* cmdline
 		renderSystem->Init();
 		
 		whiteMaterial = declManager->FindMaterial( "_white" );
-		
+
 		if( idStr::Icmp( sys_lang.GetString(), ID_LANG_FRENCH ) == 0 )
 		{
 			// If the user specified french, we show french no matter what SKU
@@ -1206,7 +1206,6 @@ void idCommonLocal::Init( int argc, const char* const* argv, const char* cmdline
 			splashScreen = declManager->FindMaterial( "guis/assets/splash/legal_english" );
 		}
 		
-		const int legalMinTime = 4000;
 		const bool showVideo = ( !com_skipIntroVideos.GetBool() && fileSystem->UsingResourceFiles() );
 		if( showVideo )
 		{
@@ -1223,7 +1222,8 @@ void idCommonLocal::Init( int argc, const char* const* argv, const char* cmdline
 			RenderSplash();
 		}
 		
-		
+
+		const int legalMinTime = 4000;
 		int legalStartTime = Sys_Milliseconds();
 		declManager->Init2();
 		

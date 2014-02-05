@@ -1196,13 +1196,17 @@ void idRenderWorldLocal::ShowPortals()
 				// green = see through
 				GL_Color( 0, 1, 0 );
 			}
-			
+
+			// use oldschool immediate mode, doesn't exist in GLES at all
+			// TODO write emulation layer
+#if !defined( USE_GLES3 )
 			qglBegin( GL_LINE_LOOP );
 			for( j = 0; j < w->GetNumPoints(); j++ )
 			{
 				qglVertex3fv( ( *w )[j].ToFloatPtr() );
 			}
 			qglEnd();
+#endif
 		}
 	}
 }

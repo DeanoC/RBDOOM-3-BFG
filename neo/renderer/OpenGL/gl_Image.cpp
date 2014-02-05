@@ -35,7 +35,6 @@ Contains the Image implementation for OpenGL.
 */
 
 #include "../tr_local.h"
-
 /*
 ========================
 idImage::SubImageUpload
@@ -86,8 +85,8 @@ void idImage::SubImageUpload( int mipLevel, int x, int y, int z, int width, int 
 	}
 	else if( opts.textureType == TT_CUBIC )
 	{
-		target = GL_TEXTURE_CUBE_MAP_EXT;
-		uploadTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT + z;
+		target = GL_TEXTURE_CUBE_MAP;
+		uploadTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X + z;
 	}
 	else
 	{
@@ -102,16 +101,32 @@ void idImage::SubImageUpload( int mipLevel, int x, int y, int z, int width, int 
 	{
 		qglPixelStorei( GL_UNPACK_ROW_LENGTH, pixelPitch );
 	}
+#if !defined( USE_GLES3 )
 	if( opts.format == FMT_RGB565 )
 	{
 		glPixelStorei( GL_UNPACK_SWAP_BYTES, GL_TRUE );
 	}
+#else
+	/* This is a useful debug utility placing to output the GL input textures, later on in the processing
+		pipeline than at the iD image level. Obviously decoders and writing TGA is different per format
+	if( opts.format == FMT_RGB565 ) {
+		if( mipLevel == 0 ) {
+			idStr fileName;
+			fileName = imgName;
+			fileName.SetFileExtension( ".tga" );
+			R_WriteTGA_FromRGB565( fileName.c_str(), (const unsigned char*) pic, width, height, false, "fs_savepath" );
+		}
+	}
+	*/
+#endif
+
 #ifdef DEBUG
 	GL_CheckErrors();
 #endif
 	if( IsCompressed() )
 	{
-		qglCompressedTexSubImage2DARB( uploadTarget, mipLevel, x, y, width, height, internalFormat, compressedSize, pic );
+		// TODO GLES3
+		qglCompressedTexSubImage2D( uploadTarget, mipLevel, x, y, width, height, internalFormat, compressedSize, pic );
 	}
 	else
 	{
@@ -134,10 +149,13 @@ void idImage::SubImageUpload( int mipLevel, int x, int y, int z, int width, int 
 #ifdef DEBUG
 	GL_CheckErrors();
 #endif
+	// TODO GLES3 RGB565 has a fixed bit positions, need to check if that what Doom3 expects and fix if not
+#if !defined( USE_GLES3 )
 	if( opts.format == FMT_RGB565 )
 	{
 		glPixelStorei( GL_UNPACK_SWAP_BYTES, GL_FALSE );
 	}
+#endif
 	if( pixelPitch != 0 )
 	{
 		qglPixelStorei( GL_UNPACK_ROW_LENGTH, 0 );
@@ -168,7 +186,7 @@ void idImage::SetTexParameters()
 			target = GL_TEXTURE_2D;
 			break;
 		case TT_CUBIC:
-			target = GL_TEXTURE_CUBE_MAP_EXT;
+			target = GL_TEXTURE_CUBE_MAP;
 			break;
 		default:
 			idLib::FatalError( "%s: bad texture type %d", GetName(), opts.textureType );
@@ -262,6 +280,7 @@ void idImage::SetTexParameters()
 			common->FatalError( "%s: bad texture filter %d", GetName(), filter );
 	}
 	
+#if !defined( USE_GLES3 )
 	if( glConfig.anisotropicFilterAvailable )
 	{
 		// only do aniso filtering on mip mapped images
@@ -283,10 +302,14 @@ void idImage::SetTexParameters()
 			qglTexParameterf( target, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1 );
 		}
 	}
+#endif
 	if( glConfig.textureLODBiasAvailable && ( usage != TD_FONT ) )
 	{
 		// use a blurring LOD bias in combination with high anisotropy to fix our aliasing grate textures...
-		qglTexParameterf( target, GL_TEXTURE_LOD_BIAS_EXT, r_lodBias.GetFloat() );
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
+		qglTexParameterf( target, GL_TEXTURE_LOD_BIAS, r_lodBias.GetFloat() );
+#endif
 	}
 	
 	// set the wrap/clamp modes
@@ -298,18 +321,33 @@ void idImage::SetTexParameters()
 			break;
 		case TR_CLAMP_TO_ZERO:
 		{
+#if !defined( USE_GLES3 )
 			float color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 			qglTexParameterfv( target, GL_TEXTURE_BORDER_COLOR, color );
 			qglTexParameterf( target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );
 			qglTexParameterf( target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
+#else
+			//TODO GLES3 these needs a big fix, there is no easy fix I can think of without modifying texture or shader program mod
+			// for now just use CLAMP_TO_EDGE (incorrect filtering at edge)
+#pragma GCC warning ("TODO GLES3")
+			qglTexParameterf( target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+			qglTexParameterf( target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+#endif
 		}
 		break;
 		case TR_CLAMP_TO_ZERO_ALPHA:
 		{
+#if !defined( USE_GLES3 )
 			float color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 			qglTexParameterfv( target, GL_TEXTURE_BORDER_COLOR, color );
 			qglTexParameterf( target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );
 			qglTexParameterf( target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
+#else
+			//TODO GLES3 these needs a big fix, there is no easy fix I can think of without modifying texture or shader program mod
+			// for now just use CLAMP_TO_EDGE (incorrect filtering at edge)
+			qglTexParameterf( target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+			qglTexParameterf( target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+#endif
 		}
 		break;
 		case TR_CLAMP:
@@ -393,21 +431,27 @@ void idImage::AllocImage()
 #endif
 			dataType = GL_UNSIGNED_BYTE;
 			break;
+		case FMT_DEPTH:
+			internalFormat = GL_DEPTH_COMPONENT;
+			dataFormat = GL_DEPTH_COMPONENT;
+			dataType = GL_UNSIGNED_BYTE;
+			break;
 		case FMT_DXT1:
 			internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
 			dataFormat = GL_RGBA;
 			dataType = GL_UNSIGNED_BYTE;
 			break;
 		case FMT_DXT5:
+#if !defined( USE_GLES3 )
 			internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+#else
+			internalFormat = GL_COMPRESSED_RGBA_S3TC_DXT5_ANGLE;
+#endif
 			dataFormat = GL_RGBA;
 			dataType = GL_UNSIGNED_BYTE;
 			break;
-		case FMT_DEPTH:
-			internalFormat = GL_DEPTH_COMPONENT;
-			dataFormat = GL_DEPTH_COMPONENT;
-			dataType = GL_UNSIGNED_BYTE;
-			break;
+#if !defined( USE_GLES3 )
+#pragma GCC warning ("TODO GLES3")
 		case FMT_X16:
 			internalFormat = GL_INTENSITY16;
 			dataFormat = GL_LUMINANCE;
@@ -418,6 +462,7 @@ void idImage::AllocImage()
 			dataFormat = GL_LUMINANCE_ALPHA;
 			dataType = GL_UNSIGNED_SHORT;
 			break;
+#endif
 		default:
 			idLib::Error( "Unhandled image format %d in %s\n", opts.format, GetName() );
 	}
@@ -449,8 +494,8 @@ void idImage::AllocImage()
 	}
 	else if( opts.textureType == TT_CUBIC )
 	{
-		target = GL_TEXTURE_CUBE_MAP_EXT;
-		uploadTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X_EXT;
+		target = GL_TEXTURE_CUBE_MAP;
+		uploadTarget = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
 		numSides = 6;
 	}
 	else
@@ -499,7 +544,7 @@ void idImage::AllocImage()
 				}
 #else
 				byte* data = ( byte* )Mem_Alloc( compressedSize, TAG_TEMP );
-				qglCompressedTexImage2DARB( uploadTarget + side, level, internalFormat, w, h, 0, compressedSize, data );
+				qglCompressedTexImage2D( uploadTarget + side, level, internalFormat, w, h, 0, compressedSize, data );
 				if( data != NULL )
 				{
 					Mem_Free( data );

@@ -513,12 +513,12 @@ void idUsercmdGenLocal::MouseMove()
 	
 	if( m_showMouseRate.GetBool() )
 	{
-		Sys_DebugPrintf( "[%3i %3i  = %5.1f %5.1f] ", mouseDx, mouseDy, mx, my );
+		Sys_DebugPrintf( "[%3i %3i  = %5.1f %5.1f] \n", mouseDx, mouseDy, mx, my );
 	}
 	
 	mouseDx = 0;
 	mouseDy = 0;
-	
+
 	viewangles[YAW] -= m_yaw.GetFloat() * mx * in_mouseSpeed.GetFloat();
 	viewangles[PITCH] += m_pitch.GetFloat() * in_mouseSpeed.GetFloat() * ( in_mouseInvertLook.GetBool() ? -my : my );
 }

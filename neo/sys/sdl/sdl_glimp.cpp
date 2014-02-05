@@ -97,7 +97,77 @@ bool GLimp_Init( glimpParms_t parms )
 	common->Printf( "Initializing OpenGL subsystem\n" );
 	
 	GLimp_PreInit(); // DG: make sure SDL is initialized
+
+    SDL_Rect bounds;
+    SDL_DisplayMode mode;
+    int bpp;
+    Uint32 Rmask, Gmask, Bmask, Amask;
+	int n = SDL_GetNumVideoDisplays();
+    fprintf(stderr, "Number of displays: %d\n", n);
+    for (int i = 0; i < n; ++i) {
+        fprintf(stderr, "Display %d: %s\n", i, SDL_GetDisplayName(i));
+
+        SDL_zero(bounds);
+        SDL_GetDisplayBounds(i, &bounds);
+        fprintf(stderr, "Bounds: %dx%d at %d,%d\n", bounds.w, bounds.h, bounds.x, bounds.y);
+
+        SDL_GetDesktopDisplayMode(i, &mode);
+        SDL_PixelFormatEnumToMasks(mode.format, &bpp, &Rmask, &Gmask,
+                                   &Bmask, &Amask);
+        fprintf(stderr,
+                "  Current mode: %dx%d@%dHz, %d bits-per-pixel (%s)\n",
+                mode.w, mode.h, mode.refresh_rate, bpp,
+                SDL_GetPixelFormatName(mode.format));
+        if (Rmask || Gmask || Bmask) {
+            fprintf(stderr, "      Red Mask   = 0x%.8x\n", Rmask);
+            fprintf(stderr, "      Green Mask = 0x%.8x\n", Gmask);
+            fprintf(stderr, "      Blue Mask  = 0x%.8x\n", Bmask);
+            if (Amask)
+                fprintf(stderr, "      Alpha Mask = 0x%.8x\n", Amask);
+        }
+
+        /* Print available fullscreen video modes */
+        int m = SDL_GetNumDisplayModes(i);
+        if (m == 0) {
+            fprintf(stderr, "No available fullscreen video modes\n");
+        } else {
+            fprintf(stderr, "  Fullscreen video modes:\n");
+            for (int j = 0; j < m; ++j) {
+                SDL_GetDisplayMode(i, j, &mode);
+                SDL_PixelFormatEnumToMasks(mode.format, &bpp, &Rmask,
+                                           &Gmask, &Bmask, &Amask);
+                fprintf(stderr,
+                        "    Mode %d: %dx%d@%dHz, %d bits-per-pixel (%s)\n",
+                        j, mode.w, mode.h, mode.refresh_rate, bpp,
+                        SDL_GetPixelFormatName(mode.format));
+                if (Rmask || Gmask || Bmask) {
+                    fprintf(stderr, "        Red Mask   = 0x%.8x\n",
+                            Rmask);
+                    fprintf(stderr, "        Green Mask = 0x%.8x\n",
+                            Gmask);
+                    fprintf(stderr, "        Blue Mask  = 0x%.8x\n",
+                            Bmask);
+                    if (Amask)
+                        fprintf(stderr,
+                                "        Alpha Mask = 0x%.8x\n",
+                                Amask);
+                }
+            }
+        }
+    }
+
+	SDL_RendererInfo info;
 	
+	n = SDL_GetNumRenderDrivers();
+	if (n == 0) {
+		fprintf(stderr, "No built-in render drivers\n");
+	} else {
+		fprintf(stderr, "Built-in render drivers:\n");
+		for (int i = 0; i < n; ++i) {
+			SDL_GetRenderDriverInfo(i, &info);
+		}
+	}
+
 	// DG: make window resizable
 	Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE;
 	// DG end
@@ -573,6 +643,7 @@ void GLimp_GrabInput( int flags )
 	// DG: check for GRAB_ENABLE instead of GRAB_HIDECURSOR because we always wanna hide it
 	SDL_SetRelativeMouseMode( flags & GRAB_ENABLE ? SDL_TRUE : SDL_FALSE );
 	SDL_SetWindowGrab( window, grab ? SDL_TRUE : SDL_FALSE );
+
 #else
 	// DG end
 	SDL_WM_GrabInput( grab ? SDL_GRAB_ON : SDL_GRAB_OFF );

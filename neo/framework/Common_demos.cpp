@@ -426,6 +426,50 @@ void idCommonLocal::CompressDemoFile( const char* scheme, const char* demoName )
 idCommonLocal::AdvanceRenderDemo
 ===============
 */
+
+void idCommonLocal::AdvanceRenderDemo( bool singleFrameOnly ) {
+
+	int skipFrames = 0;
+
+	while( skipFrames > -1 ) {
+		int             ds = DS_FINISHED;
+
+		readDemo->ReadInt( ds );
+		if ( ds == DS_FINISHED ) {
+			if ( numDemoFrames != 1 ) {
+				// if the demo has a single frame (a demoShot), continuously replay
+				// the renderView that has already been read
+				Stop();
+				StartMenu();
+			}
+			break;
+		}
+		if ( ds == DS_RENDER ) {
+			if ( renderWorld->ProcessDemoCommand( readDemo, &currentDemoRenderView, &demoTimeOffset ) ) {
+				// a view is ready to render
+				skipFrames--;
+				numDemoFrames++;
+			}
+			continue;
+		}
+		if ( ds == DS_SOUND ) {
+			soundWorld->ProcessDemoCommand( readDemo );
+			continue;
+		}
+		// appears in v1.2,
+		if ( ds == DS_VERSION ) {
+			int rdVersion;
+			readDemo->ReadInt( rdVersion );
+			if( rdVersion != RENDERDEMO_VERSION) {
+				common->Error( "Bad render demo version" );
+			}
+			continue;
+		}
+		common->Error( "Bad render demo token" );
+	}
+}
+
+/*
 void idCommonLocal::AdvanceRenderDemo( bool singleFrameOnly )
 {
 	int	ds = DS_FINISHED;
@@ -452,11 +496,22 @@ void idCommonLocal::AdvanceRenderDemo( bool singleFrameOnly )
 		case DS_SOUND:
 			soundWorld->ProcessDemoCommand( readDemo );
 			break;
+		case DS_VERSION:
+			{
+				int rdVersion;
+				readDemo->ReadInt( rdVersion );
+				if( rdVersion != RENDERDEMO_VERSION) {
+					common->Error( "Bad render demo version" );
+				} //else {
+					//readDemo->SetIsReady();
+				//}
+			}
+			break;
 		default:
 			common->Error( "Bad render demo token" );
 	}
 }
-
+*/
 /*
 ================
 Common_DemoShot_f

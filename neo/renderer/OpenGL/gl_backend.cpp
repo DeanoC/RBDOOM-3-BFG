@@ -147,6 +147,7 @@ const void GL_BlockingSwapBuffers()
 	}
 	
 	GLimp_SwapBuffers();
+	GL_CheckErrors();
 	
 	const int beforeFence = Sys_Milliseconds();
 	if( r_showSwapBuffers.GetBool() && beforeFence - beforeSwap > 1 )
@@ -164,9 +165,11 @@ const void GL_BlockingSwapBuffers()
 		}
 		// draw something tiny to ensure the sync is after the swap
 		const int start = Sys_Milliseconds();
+
 		qglScissor( 0, 0, 1, 1 );
 		qglEnable( GL_SCISSOR_TEST );
 		qglClear( GL_COLOR_BUFFER_BIT );
+		GL_CheckErrors(); // DEANO GLES3 useful for figuring out context setup issues (first place render into buffer occurs)
 		renderSync[swapIndex] = qglFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 );
 		const int end = Sys_Milliseconds();
 		if( r_showSwapBuffers.GetBool() && end - start > 1 )
@@ -234,6 +237,8 @@ Renders the draw list twice, with slight modifications for left eye / right eye
 */
 void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t* const allCmds )
 {
+	// No quad-buffer stereo in GLES3
+
 	uint64 backEndStartTime = Sys_Microseconds();
 	
 	// If we are in a monoscopic context, this draws to the only buffer, and is
@@ -243,7 +248,9 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t* const allCmds 
 	// To allow stereo deghost processing, the views have to be copied to separate
 	// textures anyway, so there isn't any benefit to rendering to BACK_RIGHT for
 	// that eye.
+#if !defined( USE_GLES3 )
 	qglDrawBuffer( GL_BACK_LEFT );
+#endif
 	
 	// create the stereoRenderImage if we haven't already
 	static idImage* stereoRenderImages[2];
@@ -344,10 +351,12 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t* const allCmds 
 	// make sure we draw to both eyes.  This is likely to be sub-optimal
 	// performance on most cards and drivers, but it is better than getting
 	// a confusing, half-ghosted view.
+#if !defined( USE_GLES3 )
 	if( renderSystem->GetStereo3DMode() != STEREO3D_QUAD_BUFFER )
 	{
 		glDrawBuffer( GL_BACK );
 	}
+#endif
 	
 	GL_State( GLS_DEPTHFUNC_ALWAYS );
 	GL_Cull( CT_TWO_SIDED );
@@ -370,6 +379,7 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t* const allCmds 
 	switch( renderSystem->GetStereo3DMode() )
 	{
 		case STEREO3D_QUAD_BUFFER:
+#if !defined( USE_GLES3 )
 			glDrawBuffer( GL_BACK_RIGHT );
 			GL_SelectTexture( 0 );
 			stereoRenderImages[1]->Bind();
@@ -383,6 +393,7 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t* const allCmds 
 			GL_SelectTexture( 0 );
 			stereoRenderImages[0]->Bind();
 			RB_DrawElementsWithCounters( &backEnd.unitSquareSurface );
+#endif
 			
 			break;
 		case STEREO3D_HDMI_720:
@@ -440,8 +451,15 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t* const allCmds 
 				
 				GL_SelectTexture( 0 );
 				stereoRenderImages[0]->Bind();
+#if !defined( USE_GLES3 )
 				qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );
 				qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
+#else
+				// TODO GLES3 its not obvious why its CLAMP_TO_BORDER as it doesn't set the border colour (near here anyway)
+				// will need to check to see if this define can't be removed
+				qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+				qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+#endif
 				RB_DrawElementsWithCounters( &backEnd.unitSquareSurface );
 				
 				idVec4	color2( stereoRender_warpCenterX.GetFloat(), stereoRender_warpCenterY.GetFloat(), stereoRender_warpParmZ.GetFloat(), stereoRender_warpParmW.GetFloat() );
@@ -455,8 +473,15 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t* const allCmds 
 				
 				GL_SelectTexture( 0 );
 				stereoRenderImages[1]->Bind();
+#if !defined( USE_GLES3 )
 				qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER );
 				qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER );
+#else
+				// TODO GLES3 its not obvious why its CLAMP_TO_BORDER as it doesn't set the border colour (near here anyway)
+				// will need to check to see if this define can't be removed
+				qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+				qglTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+#endif
 				RB_DrawElementsWithCounters( &backEnd.unitSquareSurface );
 				break;
 			}
@@ -532,6 +557,7 @@ void RB_StereoRenderExecuteBackEndCommands( const emptyCommand_t* const allCmds 
 	// stop rendering on this thread
 	uint64 backEndFinishTime = Sys_Microseconds();
 	backEnd.pc.totalMicroSec = backEndFinishTime - backEndStartTime;
+
 }
 
 /*

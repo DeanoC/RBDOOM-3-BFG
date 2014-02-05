@@ -126,18 +126,21 @@ void idRenderSystemLocal::RenderCommandBuffers( const emptyCommand_t* const cmdH
 	// draw 2D graphics
 	if( !r_skipBackEnd.GetBool() )
 	{
+		// not supported on GL ES3
+#if !defined( USE_GLES3 )
 		if( glConfig.timerQueryAvailable )
 		{
 			if( tr.timerQueryId == 0 )
 			{
-				qglGenQueriesARB( 1, & tr.timerQueryId );
+				qglGenQueries( 1, & tr.timerQueryId );
 			}
-			qglBeginQueryARB( GL_TIME_ELAPSED_EXT, tr.timerQueryId );
+			qglBeginQuery( GL_TIME_ELAPSED, tr.timerQueryId );
 			RB_ExecuteBackEndCommands( cmdHead );
-			qglEndQueryARB( GL_TIME_ELAPSED_EXT );
+			qglEndQuery( GL_TIME_ELAPSED_EXT );
 			qglFlush();
 		}
 		else
+#endif
 		{
 			RB_ExecuteBackEndCommands( cmdHead );
 		}
@@ -259,6 +262,7 @@ static void R_CheckCvars()
 		}
 	}
 	
+#if !defined( USE_GLES3 )
 	extern idCVar r_useSeamlessCubeMap;
 	if( r_useSeamlessCubeMap.IsModified() )
 	{
@@ -275,7 +279,10 @@ static void R_CheckCvars()
 			}
 		}
 	}
+#endif
 	
+	// TODO GLES3 supports SRGB framebuffer using a different model (state attached to the each framebuffer object)
+#if !defined( USE_GLES3 )
 	extern idCVar r_useSRGB;
 	if( r_useSRGB.IsModified() )
 	{
@@ -292,19 +299,22 @@ static void R_CheckCvars()
 			}
 		}
 	}
-	
-	
+#endif
+
+#if !defined( USE_GLES3 )
+	// TODO GLES3 Multisample buffers handled differently, no global state is a property of render buffers
 	if( r_multiSamples.IsModified() )
 	{
 		if( r_multiSamples.GetInteger() > 0 )
 		{
-			qglEnable( GL_MULTISAMPLE_ARB );
+			qglEnable( GL_MULTISAMPLE_EXT );
 		}
 		else
 		{
-			qglDisable( GL_MULTISAMPLE_ARB );
+			qglDisable( GL_MULTISAMPLE_EXT );
 		}
 	}
+#endif
 	
 	// check for changes to logging state
 	GLimp_EnableLogging( r_logFile.GetInteger() != 0 );
@@ -730,6 +740,7 @@ void idRenderSystemLocal::SwapCommandBuffers_FinishRendering(
 		GL_BlockingSwapBuffers();
 	}
 	
+#if !defined( USE_GLES3 )
 	// read back the start and end timer queries from the previous frame
 	if( glConfig.timerQueryAvailable )
 	{
@@ -746,6 +757,7 @@ void idRenderSystemLocal::SwapCommandBuffers_FinishRendering(
 			*gpuMicroSec = drawingTimeNanoseconds / 1000;
 		}
 	}
+#endif
 	
 	//------------------------------
 	
@@ -804,7 +816,15 @@ const emptyCommand_t* idRenderSystemLocal::SwapCommandBuffers_FinishCommandBuffe
 	// use the other buffers next frame, because another CPU
 	// may still be rendering into the current buffers
 	R_ToggleSmpFrame();
-	
+
+	if ( common->WriteDemo() ) {
+			common->WriteDemo()->WriteInt( DS_RENDER );
+			common->WriteDemo()->WriteInt( DC_END_FRAME );
+            if ( r_showDemo.GetBool() ) {
+                    common->Printf( "write DC_END_FRAME\n" );
+            }
+    }
+
 	// possibly change the stereo3D mode
 	// PC
 	if( glConfig.nativeScreenWidth == 1280 && glConfig.nativeScreenHeight == 1470 )
@@ -818,7 +838,7 @@ const emptyCommand_t* idRenderSystemLocal::SwapCommandBuffers_FinishCommandBuffe
 	
 	// prepare the new command buffer
 	guiModel->BeginFrame();
-	
+	GL_CheckErrors();
 	//------------------------------
 	// Make sure that geometry used by code is present in the buffer cache.
 	// These use frame buffer cache (not static) because they may be used during

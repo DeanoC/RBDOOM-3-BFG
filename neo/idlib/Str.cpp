@@ -1432,8 +1432,14 @@ bool idStr::IsNumeric( const char* s )
 {
 	int		i;
 	bool	dot;
+	// Deano BUGFIX this incorrectly identifies unary + and - as numbers
+	// if no digit is detected, don't claim to be a number
+	bool	digitDetect = false;
 	
 	if( *s == '-' )
+	{
+		s++;
+	} else if( *s == '+' )
 	{
 		s++;
 	}
@@ -1449,10 +1455,16 @@ bool idStr::IsNumeric( const char* s )
 				continue;
 			}
 			return false;
+		} else
+		{
+			digitDetect = true;
 		}
 	}
-	
-	return true;
+	if( digitDetect ) {
+		return true;
+	} else {
+		return false;
+	}
 }
 
 /*

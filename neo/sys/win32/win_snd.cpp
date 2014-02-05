@@ -28,8 +28,6 @@ If you have questions concerning this license or the applicable additional terms
 #pragma hdrstop
 #include "precompiled.h"
 
-// Deano: DxErr.h doesn't come with the desktop vs2012 SDK either
-#if 0
 // RB: <DxErr.h> not available on Windows 8 SDK
 #if defined(__MINGW32__)
 #include <sal.h>
@@ -37,8 +35,6 @@ If you have questions concerning this license or the applicable additional terms
 #include <DxErr.h>
 #endif
 // RB end
-#endif
-// end Deano
 
 #include <ks.h>
 #include <ksmedia.h>

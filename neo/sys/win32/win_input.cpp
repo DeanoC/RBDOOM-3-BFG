@@ -777,7 +777,6 @@ void JoystickSamplingThread( void* data )
 		threadTimeDeltas[threadCount & 255] = delta;
 		threadCount++;
 		
-#if USE_XINPUT
 		{
 			XINPUT_STATE	joyData[MAX_JOYSTICKS];
 			bool			validData[MAX_JOYSTICKS];
@@ -833,7 +832,6 @@ void JoystickSamplingThread( void* data )
 				cs->buttonBits |= current.Gamepad.wButtons;
 			}
 		}
-#endif
 		
 		// we want this to be processed at least 250 times a second
 		WaitForSingleObject( win32.g_Joystick.timer, INFINITE );
@@ -895,7 +893,6 @@ void idJoystickWin32::SetRumble( int inputDeviceNum, int rumbleLow, int rumbleHi
 	{
 		return;
 	}
-#if USE_XINPUT
 	XINPUT_VIBRATION vibration;
 	vibration.wLeftMotorSpeed = idMath::ClampInt( 0, 65535, rumbleLow );
 	vibration.wRightMotorSpeed = idMath::ClampInt( 0, 65535, rumbleHigh );
@@ -904,7 +901,6 @@ void idJoystickWin32::SetRumble( int inputDeviceNum, int rumbleLow, int rumbleHi
 	{
 		idLib::Warning( "XInputSetState error: 0x%x", err );
 	}
-#endif
 }
 
 /*
@@ -989,7 +985,7 @@ int idJoystickWin32::PollInputEvents( int inputDeviceNum )
 //	}
 
 	controllerState_t* cs = &controllers[ inputDeviceNum ];
-#if USE_XINPUT
+	
 	// grab the current packet under a critical section
 	XINPUT_STATE xis;
 	XINPUT_STATE old;
@@ -1009,7 +1005,6 @@ int idJoystickWin32::PollInputEvents( int inputDeviceNum )
 		return numEvents;
 	}
 #endif
-
 	for( int i = 0 ; i < 32 ; i++ )
 	{
 		int	bit = 1 << i;
@@ -1075,7 +1070,6 @@ int idJoystickWin32::PollInputEvents( int inputDeviceNum )
 	{
 		PostInputEvent( inputDeviceNum, J_AXIS_RIGHT_Y, -xis.Gamepad.sThumbRY );
 	}
-#endif
 	
 	return numEvents;
 }

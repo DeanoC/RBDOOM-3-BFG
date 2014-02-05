@@ -120,27 +120,42 @@ attribInfo_t attribsPC[] =
 	{ "float",		"facing",		"FACE",			"gl_FrontFacing",		0,	AT_PS_IN,		0 },
 	
 	// fragment program output
+#if defined( USE_GLES3 )
+	{ "float4",		"color",		"COLOR",		"out_FragColor",		0,	AT_PS_OUT,		0 },
+	{ "half4",		"hcolor",		"COLOR",		"out_FragColor",		0,	AT_PS_OUT,		0 },
+	{ "float4",		"color0",		"COLOR0",		"out_FragColor",		0,	AT_PS_OUT,		0 },
+	{ "float4",		"color1",		"COLOR1",		"out_FragColor",		1,	AT_PS_OUT,		0 },
+	{ "float4",		"color2",		"COLOR2",		"out_FragColor",		2,	AT_PS_OUT,		0 },
+	{ "float4",		"color3",		"COLOR3",		"out_FragColor",		3,	AT_PS_OUT,		0 },
+#else
 	{ "float4",		"color",		"COLOR",		"gl_FragColor",		0,	AT_PS_OUT,		0 }, // GLSL version 1.2 doesn't allow for custom color name mappings
 	{ "half4",		"hcolor",		"COLOR",		"gl_FragColor",		0,	AT_PS_OUT,		0 },
 	{ "float4",		"color0",		"COLOR0",		"gl_FragColor",		0,	AT_PS_OUT,		0 },
 	{ "float4",		"color1",		"COLOR1",		"gl_FragColor",		1,	AT_PS_OUT,		0 },
 	{ "float4",		"color2",		"COLOR2",		"gl_FragColor",		2,	AT_PS_OUT,		0 },
 	{ "float4",		"color3",		"COLOR3",		"gl_FragColor",		3,	AT_PS_OUT,		0 },
+#endif
 	{ "float",		"depth",		"DEPTH",		"gl_FragDepth",		4,	AT_PS_OUT,		0 },
 	
 	// vertex to fragment program pass through
-	{ "float4",		"color",		"COLOR",		"gl_FrontColor",			0,	AT_VS_OUT,	0 },
-	{ "float4",		"color0",		"COLOR0",		"gl_FrontColor",			0,	AT_VS_OUT,	0 },
-	{ "float4",		"color1",		"COLOR1",		"gl_FrontSecondaryColor",	0,	AT_VS_OUT,	0 },
+#if defined( USE_GLES3 )
+	// GL can use the FrontColor as synynoms for Color but ES can't
+	{ "float4",		"color",		"COLOR",		"vofi_Color",			0,	AT_VS_OUT,	0 },
+	{ "float4",		"color0",		"COLOR0",		"vofi_Color",			0,	AT_VS_OUT,	0 },
+	{ "float4",		"color1",		"COLOR1",		"vofi_SecondaryColor",	0,	AT_VS_OUT,	0 },
+#else
+	{ "float4",		"color",		"COLOR",		"vofi_FrontColor",			0,	AT_VS_OUT,	0 },
+	{ "float4",		"color0",		"COLOR0",		"vofi_FrontColor",			0,	AT_VS_OUT,	0 },
+	{ "float4",		"color1",		"COLOR1",		"vofi_FrontSecondaryColor",	0,	AT_VS_OUT,	0 },
+#endif
 	
+	{ "float4",		"color",		"COLOR",		"vofi_Color",				0,	AT_PS_IN,	0 },
+	{ "float4",		"color0",		"COLOR0",		"vofi_Color",				0,	AT_PS_IN,	0 },
+	{ "float4",		"color1",		"COLOR1",		"vofi_SecondaryColor",	0,	AT_PS_IN,	0 },
 	
-	{ "float4",		"color",		"COLOR",		"gl_Color",				0,	AT_PS_IN,	0 },
-	{ "float4",		"color0",		"COLOR0",		"gl_Color",				0,	AT_PS_IN,	0 },
-	{ "float4",		"color1",		"COLOR1",		"gl_SecondaryColor",	0,	AT_PS_IN,	0 },
-	
-	{ "half4",		"hcolor",		"COLOR",		"gl_Color",				0,	AT_PS_IN,		0 },
-	{ "half4",		"hcolor0",		"COLOR0",		"gl_Color",				0,	AT_PS_IN,		0 },
-	{ "half4",		"hcolor1",		"COLOR1",		"gl_SecondaryColor",	0,	AT_PS_IN,		0 },
+	{ "half4",		"hcolor",		"COLOR",		"vofi_Color",				0,	AT_PS_IN,		0 },
+	{ "half4",		"hcolor0",		"COLOR0",		"vofi_Color",				0,	AT_PS_IN,		0 },
+	{ "half4",		"hcolor1",		"COLOR1",		"vofi_SecondaryColor",	0,	AT_PS_IN,		0 },
 	
 	{ "float4",		"texcoord0",	"TEXCOORD0_centroid",	"vofi_TexCoord0",	0,	AT_PS_IN,	0 },
 	{ "float4",		"texcoord1",	"TEXCOORD1_centroid",	"vofi_TexCoord1",	0,	AT_PS_IN,	0 },
@@ -174,8 +189,8 @@ attribInfo_t attribsPC[] =
 	{ "half4",		"htexcoord7",	"TEXCOORD7",	"vofi_TexCoord7",		0,	AT_PS_IN,		0 },
 	{ "half4",		"htexcoord8",	"TEXCOORD8",	"vofi_TexCoord8",		0,	AT_PS_IN,		0 },
 	{ "half4",		"htexcoord9",	"TEXCOORD9",	"vofi_TexCoord9",		0,	AT_PS_IN,		0 },
-	{ "float",		"fog",			"FOG",			"gl_FogFragCoord",		0,	AT_VS_OUT,		0 },
-	{ "float4",		"fog",			"FOG",			"gl_FogFragCoord",		0,	AT_PS_IN,		0 },
+	{ "float",		"fog",			"FOG",			"vofi_FogFragCoord",		0,	AT_VS_OUT,		0 },
+	{ "float4",		"fog",			"FOG",			"vofi_FogFragCoord",		0,	AT_PS_IN,		0 },
 	{ NULL,			NULL,			NULL,			NULL,					0,	0,				0 }
 };
 
@@ -555,6 +570,74 @@ struct typeConversion_t
 	{ NULL, NULL }
 };
 
+#if defined( USE_GLES3 )
+
+const char* vertexInsert =
+{
+	"#version 300 es\n"
+	"#define PC\n"
+	"\n"
+	"precision highp float;\n"
+	"precision highp sampler2D;\n"
+	"precision highp sampler2DShadow;\n"
+	"precision highp samplerCube;\n"
+	"precision highp samplerCubeShadow;\n"
+	"precision highp sampler3D;\n"
+	"\n"
+	"float saturate( float v ) { return clamp( v, 0.0, 1.0 ); }\n"
+	"vec2 saturate( vec2 v ) { return clamp( v, 0.0, 1.0 ); }\n"
+	"vec3 saturate( vec3 v ) { return clamp( v, 0.0, 1.0 ); }\n"
+	"vec4 saturate( vec4 v ) { return clamp( v, 0.0, 1.0 ); }\n"
+	"vec4 tex2Dlod( sampler2D sampler, vec4 texcoord ) { return textureLod( sampler, texcoord.xy, texcoord.w ); }\n"
+	"\n"
+};
+
+const char* fragmentInsert =
+{
+	"#version 300 es\n"
+	"#define PC\n"
+	"\n"
+	"precision highp float;\n"
+	"precision highp sampler2D;\n"
+	"precision highp sampler2DShadow;\n"
+	"precision highp samplerCube;\n"
+	"precision highp samplerCubeShadow;\n"
+	"precision highp sampler3D;\n"
+	"\n"
+	"void clip( float v ) { if ( v < 0.0 ) { discard; } }\n"
+	"void clip( vec2 v ) { if ( any( lessThan( v, vec2( 0.0 ) ) ) ) { discard; } }\n"
+	"void clip( vec3 v ) { if ( any( lessThan( v, vec3( 0.0 ) ) ) ) { discard; } }\n"
+	"void clip( vec4 v ) { if ( any( lessThan( v, vec4( 0.0 ) ) ) ) { discard; } }\n"
+	"\n"
+	"float saturate( float v ) { return clamp( v, 0.0, 1.0 ); }\n"
+	"vec2 saturate( vec2 v ) { return clamp( v, 0.0, 1.0 ); }\n"
+	"vec3 saturate( vec3 v ) { return clamp( v, 0.0, 1.0 ); }\n"
+	"vec4 saturate( vec4 v ) { return clamp( v, 0.0, 1.0 ); }\n"
+	"\n"
+	"vec4 tex2D( sampler2D sampler, vec2 texcoord ) { return texture( sampler, texcoord.xy ); }\n"
+	"vec4 tex2D( sampler2DShadow sampler, vec3 texcoord ) { return vec4( texture( sampler, texcoord.xyz ) ); }\n"
+	"\n"
+	"vec4 tex2D( sampler2D sampler, vec2 texcoord, vec2 dx, vec2 dy ) { return textureGrad( sampler, texcoord.xy, dx, dy ); }\n"
+	"vec4 tex2D( sampler2DShadow sampler, vec3 texcoord, vec2 dx, vec2 dy ) { return vec4( textureGrad( sampler, texcoord.xyz, dx, dy ) ); }\n"
+	"\n"
+	"vec4 texCUBE( samplerCube sampler, vec3 texcoord ) { return texture( sampler, texcoord.xyz ); }\n"
+	"vec4 texCUBE( samplerCubeShadow sampler, vec4 texcoord ) { return vec4( texture( sampler, texcoord.xyzw ) ); }\n"
+	"\n"
+	"vec4 tex2Dproj( sampler2D sampler, vec3 texcoord ) { return textureProj( sampler, texcoord ); }\n"
+	"vec4 tex3Dproj( sampler3D sampler, vec4 texcoord ) { return textureProj( sampler, texcoord ); }\n"
+	"\n"
+	"vec4 tex2Dbias( sampler2D sampler, vec4 texcoord ) { return texture( sampler, texcoord.xy, texcoord.w ); }\n"
+	"vec4 tex3Dbias( sampler3D sampler, vec4 texcoord ) { return texture( sampler, texcoord.xyz, texcoord.w ); }\n"
+	"vec4 texCUBEbias( samplerCube sampler, vec4 texcoord ) { return texture( sampler, texcoord.xyz, texcoord.w ); }\n"
+	"\n"
+	"vec4 tex2Dlod( sampler2D sampler, vec4 texcoord ) { return textureLod( sampler, texcoord.xy, texcoord.w ); }\n"
+	"vec4 tex3Dlod( sampler3D sampler, vec4 texcoord ) { return textureLod( sampler, texcoord.xyz, texcoord.w ); }\n"
+	"vec4 texCUBElod( samplerCube sampler, vec4 texcoord ) { return textureLod( sampler, texcoord.xyz, texcoord.w ); }\n"
+	"\n"
+};
+
+#else
+
 const char* vertexInsert =
 {
 	"#version 150\n"
@@ -607,6 +690,7 @@ const char* fragmentInsert =
 	"vec4 texCUBElod( samplerCube sampler, vec4 texcoord ) { return textureLod( sampler, texcoord.xyz, texcoord.w ); }\n"
 	"\n"
 };
+#endif
 
 struct builtinConversion_t
 {
@@ -685,6 +769,13 @@ void ParseInOutStruct( idLexer& src, int attribType, idList< inOutVariable_t >& 
 		
 		// check if it was defined previously
 		var.declareInOut = true;
+#if defined( USE_GLES3 )
+		// GLES3 Deano GLES 3.0 doesn't allow redefinitions of gl_ variables
+		if( var.nameGLSL.CmpPrefix( "gl_") == 0 ) {
+			var.declareInOut = false;
+		}
+#endif
+
 		for( int i = 0; i < inOutVars.Num(); i++ )
 		{
 			if( var.nameGLSL == inOutVars[i].nameGLSL )
@@ -720,13 +811,22 @@ idStr ConvertCG2GLSL( const idStr& in, const char* name, bool isVertexProgram, i
 	bool inMain = false;
 	const char* uniformArrayName = isVertexProgram ? VERTEX_UNIFORM_ARRAY_NAME : FRAGMENT_UNIFORM_ARRAY_NAME;
 	char newline[128] = { "\n" };
-	
+	// GLES3 has tighter type safety, so we track whether we force all numerics to float
+	bool numericsAsFloats =
+#if defined( USE_GLES3 )
+			true;
+#else
+			false;
+#endif
+	bool backupNumericsAsFloats = numericsAsFloats;
+	bool inUniform = false;
+
 	idToken token;
 	while( src.ReadToken( &token ) )
 	{
 	
 		// check for uniforms
-		while( token == "uniform" && src.CheckTokenString( "float4" ) )
+		if( token == "uniform" && src.CheckTokenString( "float4" ) )
 		{
 			src.ReadToken( &token );
 			uniformList.Append( token );
@@ -740,7 +840,10 @@ idStr ConvertCG2GLSL( const idStr& in, const char* name, bool isVertexProgram, i
 				}
 			}
 			
-			src.ReadToken( & token );
+			continue;
+		}
+		if( token == "uniform" ) {
+			inUniform = true;
 		}
 		
 		// convert the in/out structs
@@ -869,6 +972,17 @@ idStr ConvertCG2GLSL( const idStr& in, const char* name, bool isVertexProgram, i
 			program += "}";
 			continue;
 		}
+		// if we force numerics to floats we have to special case things inside []
+		if( numericsAsFloats && inUniform ) {
+			if( token == "[" ) {
+				backupNumericsAsFloats = numericsAsFloats;
+				numericsAsFloats = false;
+			}
+		} else {
+			if( token == "]" ) {
+				numericsAsFloats = backupNumericsAsFloats;
+			}
+		}
 		
 		// check for a type conversion
 		bool foundType = false;
@@ -886,7 +1000,7 @@ idStr ConvertCG2GLSL( const idStr& in, const char* name, bool isVertexProgram, i
 		{
 			continue;
 		}
-		
+
 		if( r_useUniformArrays.GetBool() )
 		{
 			// check for uniforms that need to be converted to the array
@@ -906,7 +1020,6 @@ idStr ConvertCG2GLSL( const idStr& in, const char* name, bool isVertexProgram, i
 				continue;
 			}
 		}
-		
 		// check for input/output parameters
 		if( src.CheckTokenString( "." ) )
 		{
@@ -987,9 +1100,22 @@ idStr ConvertCG2GLSL( const idStr& in, const char* name, bool isVertexProgram, i
 		{
 			continue;
 		}
-		
-		program += ( token.linesCrossed > 0 ) ? newline : ( token.WhiteSpaceBeforeToken() > 0 ? " " : "" );
-		program += token;
+
+		// Deano GLES3 promote all numbers to floats
+		if( token.IsNumeric() ) {
+			program += ( token.linesCrossed > 0 ) ? newline : ( token.WhiteSpaceBeforeToken() > 0 ? " " : "" );
+			if (numericsAsFloats) {
+				program += token.GetFloatValue();
+			} else {
+				program += token.GetIntValue();
+			}
+		} else {
+			program += ( token.linesCrossed > 0 ) ? newline : ( token.WhiteSpaceBeforeToken() > 0 ? " " : "" );
+			program += token;
+		}
+		if( token == ";" && inUniform) {
+			inUniform = false;
+		}
 	}
 	
 	idStr out;
@@ -1341,6 +1467,15 @@ public:
 	}
 };
 
+#define GL_DBG_CHK switch( qglGetError() ) { \
+case GL_NO_ERROR: break; \
+case GL_INVALID_ENUM: idLib::Printf( "%s:%d:1: error: OpenGLES GL_INVALID_ENUM\n", __FILE__, __LINE__ ); break;\
+case GL_INVALID_VALUE: idLib::Printf( "%s:%d:1: error: OpenGLES GL_INVALID_VALUE\n", __FILE__, __LINE__ ); break;\
+case GL_INVALID_OPERATION: idLib::Printf( "%s:%d:1: error: OpenGLES GL_INVALID_OPERATION\n", __FILE__, __LINE__ ); break;\
+case GL_INVALID_FRAMEBUFFER_OPERATION: idLib::Printf( "%s:%d:1: error: OpenGLES GL_INVALID_FRAMEBUFFER_OPERATION\n", __FILE__, __LINE__ ); break;\
+case GL_OUT_OF_MEMORY: idLib::Printf( "%s:%d:1: error: OpenGLES GL_OUT_OF_MEMORY\n", __FILE__, __LINE__ ); break;\
+}
+
 /*
 ================================================================================================
 idRenderProgManager::LoadGLSLProgram
@@ -1359,6 +1494,7 @@ void idRenderProgManager::LoadGLSLProgram( const int programIndex, const int ver
 	GLuint fragmentProgID = ( fragmentShaderIndex != -1 ) ? fragmentShaders[ fragmentShaderIndex ].progId : INVALID_PROGID;
 	
 	const GLuint program = qglCreateProgram();
+	GL_DBG_CHK
 	if( program )
 	{
 	

@@ -33,6 +33,9 @@ If you have questions concerning this license or the applicable additional terms
 #define __QGL_H__
 
 
+#if defined( USE_GLES3 )
+#include "qgles3.h"
+#else
 #include <GL/gl.h>
 
 
@@ -46,9 +49,7 @@ If you have questions concerning this license or the applicable additional terms
 // only use local glext.h if we are not using the system one already
 // http://oss.sgi.com/projects/ogl-sample/ABI/
 #ifndef GL_GLEXT_VERSION
-
 #include "glext.h"
-
 #endif
 
 typedef void ( *GLExtension_t )( void );
@@ -145,18 +146,18 @@ extern PFNGLISSYNCPROC						qglIsSync;
 extern PFNGLCLIENTWAITSYNCPROC				qglClientWaitSync;
 extern PFNGLDELETESYNCPROC					qglDeleteSync;
 
-// GL_ARB_occlusion_query
-extern PFNGLGENQUERIESARBPROC				qglGenQueriesARB;
-extern PFNGLDELETEQUERIESARBPROC			qglDeleteQueriesARB;
-extern PFNGLISQUERYARBPROC					qglIsQueryARB;
-extern PFNGLBEGINQUERYARBPROC				qglBeginQueryARB;
-extern PFNGLENDQUERYARBPROC					qglEndQueryARB;
-extern PFNGLGETQUERYIVARBPROC				qglGetQueryivARB;
-extern PFNGLGETQUERYOBJECTIVARBPROC			qglGetQueryObjectivARB;
-extern PFNGLGETQUERYOBJECTUIVARBPROC		qglGetQueryObjectuivARB;
+// GL_ARB_occlusion_query core since 3
+extern PFNGLGENQUERIESARBPROC				qglGenQueries;
+extern PFNGLDELETEQUERIESARBPROC			qglDeleteQueries;
+extern PFNGLISQUERYARBPROC					qglIsQuery;
+extern PFNGLBEGINQUERYARBPROC				qglBeginQuery;
+extern PFNGLENDQUERYARBPROC					qglEndQuery;
+extern PFNGLGETQUERYIVARBPROC				qglGetQueryiv;
+extern PFNGLGETQUERYOBJECTIVARBPROC			qglGetQueryObjectiv;
+extern PFNGLGETQUERYOBJECTUIVARBPROC		qglGetQueryObjectuiv;
 
-// GL_ARB_timer_query / GL_EXT_timer_query
-extern PFNGLGETQUERYOBJECTUI64VEXTPROC		qglGetQueryObjectui64vEXT;
+// GL_ARB_timer_query / GL_EXT_timer_query / Core since 3.3
+extern PFNGLGETQUERYOBJECTUI64VEXTPROC		qglGetQueryObjectui64v;
 
 // GL_ARB_debug_output
 extern PFNGLDEBUGMESSAGECONTROLARBPROC		qglDebugMessageControlARB;
@@ -550,5 +551,7 @@ extern BOOL ( WINAPI* qwglSwapLayerBuffers )( HDC, UINT );
 
 
 #endif	// hardlinlk vs dlopen
+
+#endif
 
 #endif

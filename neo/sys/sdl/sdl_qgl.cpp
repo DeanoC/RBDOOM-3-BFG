@@ -37,6 +37,7 @@ If you have questions concerning this license or the applicable additional terms
 */
 #pragma hdrstop
 #include "../../idlib/precompiled.h"
+#if !defined( USE_GLES3 )
 
 #include <float.h>
 //#include "win_local.h"
@@ -1650,7 +1651,6 @@ bool QGL_Init( const char* dllname )
 	}
 	common->Printf( "succeeded\n" );
 	*/
-	
 	qglAccum                     = dllAccum = glAccum;
 	qglAlphaFunc                 = dllAlphaFunc = glAlphaFunc;
 	qglAreTexturesResident       = dllAreTexturesResident = glAreTexturesResident;
@@ -2027,3 +2027,5 @@ void GLimp_EnableLogging( bool enable )
 {
 
 }
+
+#endif

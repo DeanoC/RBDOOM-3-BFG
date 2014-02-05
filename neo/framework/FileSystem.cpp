@@ -2989,7 +2989,7 @@ void idFileSystemLocal::SetupGameDirectories( const char* gameName )
 	{
 		AddGameDirectory( fs_basepath.GetString(), gameName );
 	}
-	// setup savepath
+	
 	if( fs_savepath.GetString()[0] )
 	{
 		AddGameDirectory( fs_savepath.GetString(), gameName );

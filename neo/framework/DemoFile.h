@@ -75,9 +75,13 @@ public:
 	int				Read( void* buffer, int len );
 	int				Write( const void* buffer, int len );
 	
+	bool			IsReady() const { return isReady; };
+	void			SetIsReady() { isReady = true; };
+
 private:
 	static idCompressor* AllocCompressor( int type );
 	
+	bool			isReady;
 	bool			writing;
 	byte* 			fileImage;
 	idFile* 		f;

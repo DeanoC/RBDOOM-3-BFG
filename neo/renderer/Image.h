@@ -244,6 +244,7 @@ ID_INLINE idImage::idImage( const char* name ) : imgName( name )
 
 // data is RGBA
 void	R_WriteTGA( const char* filename, const byte* data, int width, int height, bool flipVertical = false, const char* basePath = "fs_savepath" );
+void R_WriteTGA_FromRGB565( const char* filename, const byte* data, int width, int height, bool flipVertical = false, const char* basePath = "fs_savepath" );
 // data is in top-to-bottom raster order unless flipVertical is set
 
 

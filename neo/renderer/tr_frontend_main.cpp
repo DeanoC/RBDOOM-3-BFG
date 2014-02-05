@@ -427,8 +427,16 @@ void R_RenderView( viewDef_t* parms )
 	
 	// identify all the visible portal areas, and create view lights and view entities
 	// for all the the entityDefs and lightDefs that are in the visible portal areas
-	static_cast<idRenderWorldLocal*>( parms->renderWorld )->FindViewLightsAndEntities();
+	idRenderWorldLocal* renderWorld = static_cast<idRenderWorldLocal*>( parms->renderWorld );
+	renderWorld->FindViewLightsAndEntities();
 	
+	// ensure always enough space for light and entities
+	if( renderWorld->interactionTableHeight < renderWorld->lightDefs.Num() ||
+		renderWorld->interactionTableWidth < renderWorld->entityDefs.Num()
+	) {
+
+		renderWorld->ResizeInteractionTable();
+	}
 	// wait for any shadow volume jobs from the previous frame to finish
 	tr.frontEndJobList->Wait();
 	

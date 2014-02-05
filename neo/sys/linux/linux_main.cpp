@@ -747,6 +747,7 @@ int main( int argc, const char** argv )
 	cmdargc = argc;
 	cmdargv = argv;
 	// DG end
+
 #ifdef ID_MCHECK
 	// must have -lmcheck linkage
 	mcheck( abrt_func );

@@ -291,8 +291,13 @@ void idCommonLocal::Draw()
 		}
 		game->Shell_Render();
 	}
-	else if( readDemo )
+	else if( readDemo && readDemo->IsReady() )
 	{
+		// DEANO hack
+		if( currentDemoRenderView.fov_x <= 0 || currentDemoRenderView.fov_y <= 0 ) {
+			currentDemoRenderView.fov_x = 90;
+			currentDemoRenderView.fov_y = 90;
+		}
 		renderWorld->RenderScene( &currentDemoRenderView );
 		renderSystem->DrawDemoPics();
 	}
@@ -665,7 +670,7 @@ void idCommonLocal::Frame()
 			// com_engineHz is 60, so sleep a bit and check again
 			Sys_Sleep( 0 );
 		}
-		
+
 		//--------------------------------------------
 		// It would be better to push as much of this as possible
 		// either before or after the renderSystem->SwapCommandBuffers(),
@@ -705,7 +710,12 @@ void idCommonLocal::Frame()
 		
 		// send frame and mouse events to active guis
 		GuiFrameEvents();
-		
+
+        // advance demos
+        if ( readDemo ) {
+			 AdvanceRenderDemo( false );
+        }
+
 		//--------------------------------------------
 		// Prepare usercmds and kick off the game processing
 		// in a background thread

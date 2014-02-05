@@ -138,8 +138,14 @@ void idRenderProgManager::Init()
 	builtinShaders[BUILTIN_SHADOW] = FindVertexShader( "shadow.vp" );
 	builtinShaders[BUILTIN_SHADOW_SKINNED] = FindVertexShader( "shadow_skinned.vp" );
 	
+	// GLES3 always requires a fragment shader even if not used by the actual renderer (no colour output)
+#if !defined( USE_GLES3 )
 	FindGLSLProgram( "shadow.vp", builtinShaders[BUILTIN_SHADOW], -1 );
 	FindGLSLProgram( "shadow_skinned.vp", builtinShaders[BUILTIN_SHADOW_SKINNED], -1 );
+#else
+	FindGLSLProgram( "shadow.vp", builtinShaders[BUILTIN_SHADOW], BUILTIN_SHADOW_DEBUG );
+	FindGLSLProgram( "shadow_skinned.vp", builtinShaders[BUILTIN_SHADOW_SKINNED], BUILTIN_SHADOW_DEBUG_SKINNED );
+#endif
 	
 	glslUniforms.SetNum( RENDERPARM_USER + MAX_GLSL_USER_PARMS, vec4_zero );
 	
@@ -186,6 +192,7 @@ idRenderProgManager::KillAllShaders()
 void idRenderProgManager::KillAllShaders()
 {
 	Unbind();
+
 	for( int i = 0; i < vertexShaders.Num(); i++ )
 	{
 		if( vertexShaders[i].progId != INVALID_PROGID )

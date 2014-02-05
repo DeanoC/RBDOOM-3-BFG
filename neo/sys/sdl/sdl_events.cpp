@@ -887,14 +887,8 @@ sysEvent_t Sys_GetEvent()
 					
 					if( key == 0 )
 					{
-#if SDL_VERSION_ATLEAST(2, 0, 0)
-						// SDL2 has no ev.key.keysym.unicode anymore.. but the scancode should work well enough for console
-						if( ev.type == SDL_KEYDOWN ) // FIXME: don't complain if this was an ASCII char and the console is open?
-							common->Warning( "unmapped SDL key %d scancode %d", ev.key.keysym.sym, ev.key.keysym.scancode );
-
-						return res_none;
-#else
-						unsigned char uc = ev.key.keysym.unicode & 0xff;
+					
+						unsigned char uc = ev.key.keysym.sym & 0xff;
 						// check if its an unmapped console key
 						if( uc == Sys_GetConsoleKey( false ) || uc == Sys_GetConsoleKey( true ) )
 						{
@@ -904,10 +898,9 @@ sysEvent_t Sys_GetEvent()
 						else
 						{
 							if( ev.type == SDL_KEYDOWN ) // FIXME: don't complain if this was an ASCII char and the console is open?
-								common->Warning( "unmapped SDL key %d (0x%x) scancode %d", ev.key.keysym.sym, ev.key.keysym.unicode, ev.key.keysym.scancode );
+								common->Warning( "unmapped SDL key %d (0x) scancode %d", ev.key.keysym.sym, ev.key.keysym.scancode );
 							return res_none;
 						}
-#endif
 					}
 				}
 				
@@ -953,6 +946,58 @@ sysEvent_t Sys_GetEvent()
 				}
 				// DG end
 				
+#define FIX_BUGGY_RELATIVE_MODE 1
+
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+				// Not sure where yet, but we get a 'push' back that returns our mouse to <0,0> a frames
+				// after a mouse move. This makes sense as relative mode often works by resetting the mouse
+				// but the movement back shouldn't be getting here!
+				// HACKY fix is to filter after movement back that occurs after a few frames.
+#if FIX_BUGGY_RELATIVE_MODE == 1
+				{
+					static const int FILTER_SIZE = 10;
+					static int xfilter[FILTER_SIZE] = { 0 };
+					static int yfilter[FILTER_SIZE] = { 0 };
+
+					int xaccum = ev.motion.xrel;
+					for( int i = FILTER_SIZE-1; i >= 0; i-- ) {
+						xaccum += xfilter[i];
+						if( xaccum == 0 ) {
+							ev.motion.xrel = 0;
+							for( int j = 0; j < FILTER_SIZE; ++j ) {
+								xfilter[j] = 0;
+							}
+							break;
+						}
+					}
+					if( ev.motion.xrel != 0 ) {
+						for( int j = 0; j < FILTER_SIZE-1; ++j ) {
+							xfilter[j] = xfilter[j+1];
+						}
+						xfilter[FILTER_SIZE-1] = ev.motion.xrel;
+					}
+					int yaccum = ev.motion.yrel;
+					for( int i = FILTER_SIZE-1; i >= 0; i-- ) {
+						yaccum += yfilter[i];
+						if( yaccum == 0 ) {
+							ev.motion.yrel = 0;
+							for( int j = 0; j < FILTER_SIZE; ++j ) {
+								yfilter[j] = 0;
+							}
+							break;
+						}
+					}
+					if( ev.motion.yrel != 0 ) {
+						for( int j = 0; j < FILTER_SIZE-1; ++j ) {
+							yfilter[j] = yfilter[j+1];
+						}
+						yfilter[FILTER_SIZE-1] = ev.motion.yrel;
+					}
+//					common->Warning( "ev.motion.xrel %i {%i,%i,%i,%i}", ev.motion.xrel, xfilter[0], xfilter[1], xfilter[2], xfilter[3], xfilter[4] );
+				}
+#endif
+#endif
+
 				mouse_polls.Append( mouse_poll_t( M_DELTAX, ev.motion.xrel ) );
 				mouse_polls.Append( mouse_poll_t( M_DELTAY, ev.motion.yrel ) );
 				

@@ -48,6 +48,7 @@ idDemoFile::idDemoFile()
 	fileImage = NULL;
 	compressor = NULL;
 	writing = false;
+	isReady = true;
 }
 
 /*

@@ -115,6 +115,52 @@ void R_WriteTGA( const char* filename, const byte* data, int width, int height, 
 	
 	fileSystem->WriteFile( filename, buffer, bufferSize, basePath );
 }
+/*
+================
+R_WriteTGA
+================
+*/
+void R_WriteTGA_FromRGB565( const char* filename, const byte* data, int width, int height, bool flipVertical, const char* basePath )
+{
+	byte*	buffer;
+	int		i;
+	int		bufferSize = width * height * 4 + 18;
+	int     bufStart = 18;
+
+	idTempArray<byte> buf( bufferSize );
+	buffer = ( byte* )buf.Ptr();
+	memset( buffer, 0, 18 );
+	buffer[2] = 2;		// uncompressed type
+	buffer[12] = width & 255;
+	buffer[13] = width >> 8;
+	buffer[14] = height & 255;
+	buffer[15] = height >> 8;
+	buffer[16] = 32;	// pixel size
+	if( !flipVertical )
+	{
+		buffer[17] = ( 1 << 5 );	// flip bit, for normal top to bottom raster order
+	}
+
+	for( i = 0; i < (width * height * 2); i += 2 )
+	{
+		// input as 16 bit RGB565
+		uint16 sdata = (data[ i + 0 ] << 8) | data[ i + 1 ];
+		// expand to 32 bit RGBA
+		uint8 wdata[4];
+		wdata[0] = 	((sdata & 0xF800) >> 11) << 3; //R
+		wdata[1] = 	((sdata & 0x07E0) >> 5) << 2;  //G
+		wdata[2] = 	((sdata & 0x001F) >> 0) << 3;  //B
+		wdata[3] = 	0xFF;					  //A
+		// store out as 32 bit bgra
+		buffer[(i*2) + 0 + bufStart] = wdata[2];		// blue
+		buffer[(i*2) + 1 + bufStart] = wdata[1];		// green
+		buffer[(i*2) + 2 + bufStart] = wdata[0];		// red
+		buffer[(i*2) + 3 + bufStart] = wdata[3];		// alpha
+	}
+
+	fileSystem->WriteFile( filename, buffer, bufferSize, basePath );
+}
+
 
 static void LoadTGA( const char* name, byte** pic, int* width, int* height, ID_TIME_T* timestamp );
 static void LoadJPG( const char* name, byte** pic, int* width, int* height, ID_TIME_T* timestamp );

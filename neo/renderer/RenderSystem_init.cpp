@@ -47,7 +47,7 @@ idGuiModel* tr_guiModel;
 glconfig_t	glConfig;
 
 idCVar r_requestStereoPixelFormat( "r_requestStereoPixelFormat", "1", CVAR_RENDERER, "Ask for a stereo GL pixel format on startup" );
-idCVar r_debugContext( "r_debugContext", "0", CVAR_RENDERER, "Enable various levels of context debug." );
+idCVar r_debugContext( "r_debugContext", "3", CVAR_RENDERER, "Enable various levels of context debug." );
 idCVar r_glDriver( "r_glDriver", "", CVAR_RENDERER, "\"opengl32\", etc." );
 idCVar r_skipIntelWorkarounds( "r_skipIntelWorkarounds", "0", CVAR_RENDERER | CVAR_BOOL, "skip workarounds for Intel driver bugs" );
 idCVar r_multiSamples( "r_multiSamples", "0", CVAR_RENDERER | CVAR_ARCHIVE | CVAR_INTEGER, "number of antialiasing samples" );
@@ -206,7 +206,7 @@ idCVar stereoRender_enable( "stereoRender_enable", "0", CVAR_INTEGER | CVAR_ARCH
 idCVar stereoRender_swapEyes( "stereoRender_swapEyes", "0", CVAR_BOOL | CVAR_ARCHIVE, "reverse eye adjustments" );
 idCVar stereoRender_deGhost( "stereoRender_deGhost", "0.05", CVAR_FLOAT | CVAR_ARCHIVE, "subtract from opposite eye to reduce ghosting" );
 
-
+#if !defined(USE_GLES3)
 // GL_ARB_multitexture
 PFNGLACTIVETEXTUREPROC					qglActiveTextureARB;
 // RB: deprecated
@@ -330,6 +330,9 @@ void APIENTRY glBindMultiTextureEXT( GLenum texunit, GLenum target, GLuint textu
 }
 
 
+#endif
+
+
 /*
 =================
 R_CheckExtension
@@ -358,7 +361,7 @@ For ARB_debug_output
 ========================
 */
 static void CALLBACK DebugCallback( unsigned int source, unsigned int type,
-									unsigned int id, unsigned int severity, int length, const char* message, void* userParam )
+									unsigned int id, unsigned int severity, int length, const char* message, const void* userParam )
 {
 	// it probably isn't safe to do an idLib::Printf at this point
 	
@@ -379,13 +382,41 @@ R_CheckPortableExtensions
 */
 static void R_CheckPortableExtensions()
 {
+#if defined( USE_GLES3 )
+	//TODO ES3 see notes below
+	// the GLES3 binds lots of functions that were extensions, so mostly we just have to set the glConfig to match
+	glConfig.multitextureAvailable = true;
+	glConfig.directStateAccess = false; // might need emulation?
+	glConfig.textureCompressionAvailable = true; // ETC2 etc. needed
+	glConfig.anisotropicFilterAvailable = false; // ES3 extension availible?
+	glConfig.maxTextureAnisotropy = 1;
+	glConfig.textureLODBiasAvailable = true;
+	glConfig.seamlessCubeMapAvailable = true; // on ES3 its not just available but always on
+	glConfig.sRGBFramebufferAvailable = true; // sRGB semantics aren't the same, so true but new code needed (TODO)
+	glConfig.vertexBufferObjectAvailable = true;
+	glConfig.mapBufferRangeAvailable = true;
+	glConfig.vertexArrayObjectAvailable = true;
+	glConfig.drawElementsBaseVertexAvailable = false;
+	glConfig.fragmentProgramAvailable = true; // GLSL only
+	glConfig.glslAvailable = true;
+	glConfig.uniformBufferAvailable = true;
+	glConfig.twoSidedStencilAvailable = true;
+	glConfig.depthBoundsTestAvailable = false;
+	glConfig.syncAvailable = true;
+	glConfig.occlusionQueryAvailable = true;
+	glConfig.timerQueryAvailable = false;
+	glConfig.debugOutputAvailable = false;
+	glConfig.maxTextureCoords = 16;
+	glConfig.maxTextureImageUnits = 16;
+	glConfig.uniformBufferOffsetAlignment = 16;
+#else
 	glConfig.glVersion = atof( glConfig.version_string );
 	const char* badVideoCard = idLocalization::GetString( "#str_06780" );
 	if( glConfig.glVersion < 2.0f )
 	{
 		idLib::FatalError( badVideoCard );
 	}
-	
+
 	if( idStr::Icmpn( glConfig.renderer_string, "ATI ", 4 ) == 0 || idStr::Icmpn( glConfig.renderer_string, "AMD ", 4 ) == 0 )
 	{
 		glConfig.vendor = VENDOR_AMD;
@@ -398,12 +429,12 @@ static void R_CheckPortableExtensions()
 	{
 		glConfig.vendor = VENDOR_INTEL;
 	}
-	
-	// GL_ARB_multitexture
+
+	// Core 1.3+ or GL_ARB_multitexture
 	glConfig.multitextureAvailable = R_CheckExtension( "GL_ARB_multitexture" );
 	if( glConfig.multitextureAvailable )
 	{
-		qglActiveTextureARB = ( void( APIENTRY* )( GLenum ) )GLimp_ExtensionPointer( "glActiveTextureARB" );
+		qglActiveTexture = ( void( APIENTRY* )( GLenum ) )GLimp_ExtensionPointer( "glActiveTextureARB" );
 		// RB: deprecated
 		//qglClientActiveTextureARB = ( void( APIENTRY* )( GLenum ) )GLimp_ExtensionPointer( "glClientActiveTextureARB" );
 		// RB end
@@ -425,9 +456,9 @@ static void R_CheckPortableExtensions()
 	glConfig.textureCompressionAvailable = R_CheckExtension( "GL_ARB_texture_compression" ) && R_CheckExtension( "GL_EXT_texture_compression_s3tc" );
 	if( glConfig.textureCompressionAvailable )
 	{
-		qglCompressedTexImage2DARB = ( PFNGLCOMPRESSEDTEXIMAGE2DARBPROC )GLimp_ExtensionPointer( "glCompressedTexImage2DARB" );
-		qglCompressedTexSubImage2DARB = ( PFNGLCOMPRESSEDTEXSUBIMAGE2DARBPROC )GLimp_ExtensionPointer( "glCompressedTexSubImage2DARB" );
-		qglGetCompressedTexImageARB = ( PFNGLGETCOMPRESSEDTEXIMAGEARBPROC )GLimp_ExtensionPointer( "glGetCompressedTexImageARB" );
+		qglCompressedTexImage2D = ( PFNGLCOMPRESSEDTEXIMAGE2DARBPROC )GLimp_ExtensionPointer( "glCompressedTexImage2DARB" );
+		qglCompressedTexSubImage2D = ( PFNGLCOMPRESSEDTEXSUBIMAGE2DARBPROC )GLimp_ExtensionPointer( "glCompressedTexSubImage2DARB" );
+//		qglGetCompressedTexImage = ( PFNGLGETCOMPRESSEDTEXIMAGEARBPROC )GLimp_ExtensionPointer( "glGetCompressedTexImageARB" );
 	}
 	
 	// GL_EXT_texture_filter_anisotropic
@@ -625,7 +656,8 @@ static void R_CheckPortableExtensions()
 		
 		if( r_debugContext.GetInteger() >= 1 )
 		{
-			qglDebugMessageCallbackARB( DebugCallback, NULL );
+			// ES emulator (Mali on NVIDIA) has the ARB extension string but not the actual call so check its not NULL
+			qglDebugMessageControlARB ? qglDebugMessageCallbackARB( DebugCallback, NULL ) : (void)0;
 		}
 		if( r_debugContext.GetInteger() >= 2 )
 		{
@@ -635,12 +667,13 @@ static void R_CheckPortableExtensions()
 		if( r_debugContext.GetInteger() >= 3 )
 		{
 			// enable all the low priority messages
-			qglDebugMessageControlARB( GL_DONT_CARE,
+			qglDebugMessageControlARB ? qglDebugMessageControlARB( GL_DONT_CARE,
 									   GL_DONT_CARE,
 									   GL_DEBUG_SEVERITY_LOW_ARB,
-									   0, NULL, true );
+									   0, NULL, true ) : (void)0;
 		}
 	}
+#endif
 	
 	// GL_ARB_multitexture
 	if( !glConfig.multitextureAvailable )
@@ -667,11 +700,15 @@ static void R_CheckPortableExtensions()
 	{
 		idLib::Error( "GL_ARB_vertex_array_object not available" );
 	}
+	// DEANO: GLES3 also doesn't support this
+	// TODO: use this config item rather than define to check
+#if !defined( USE_GLES3 )
 	// GL_ARB_draw_elements_base_vertex
 	if( !glConfig.drawElementsBaseVertexAvailable )
 	{
 		idLib::Error( "GL_ARB_draw_elements_base_vertex not available" );
 	}
+#endif
 	// GL_ARB_vertex_program / GL_ARB_fragment_program
 	if( !glConfig.fragmentProgramAvailable )
 	{
@@ -695,6 +732,7 @@ static void R_CheckPortableExtensions()
 	
 	// generate one global Vertex Array Object (VAO)
 	qglGenVertexArrays( 1, &glConfig.global_vao );
+
 	qglBindVertexArray( glConfig.global_vao );
 	
 }
@@ -895,9 +933,10 @@ void R_InitOpenGL()
 	
 	if( glConfig.extensions_string == NULL )
 	{
+#if !defined( USE_GLES3 )
 		// As of OpenGL 3.2, glGetStringi is required to obtain the available extensions
 		qglGetStringi = ( PFNGLGETSTRINGIPROC )GLimp_ExtensionPointer( "glGetStringi" );
-		
+#endif
 		// Build the extensions string
 		GLint numExtensions;
 		qglGetIntegerv( GL_NUM_EXTENSIONS, &numExtensions );
@@ -915,11 +954,20 @@ void R_InitOpenGL()
 	}
 	
 	
+#if !defined( USE_GLES3 )
 	float glVersion = atof( glConfig.version_string );
 	float glslVersion = atof( glConfig.shading_language_string );
 	idLib::Printf( "OpenGL Version: %3.1f\n", glVersion );
 	idLib::Printf( "OpenGL Vendor : %s\n", glConfig.vendor_string );
 	idLib::Printf( "OpenGL GLSL   : %3.1f\n", glslVersion );
+	idLib::Printf( "OpenGL Extens : %s\n", glConfig.extensions_string );
+#else
+	idLib::Printf( "OpenGL Version: %s\n", glConfig.version_string );
+	idLib::Printf( "OpenGL Vendor : %s\n", glConfig.vendor_string );
+	idLib::Printf( "OpenGL GLSL   : %s\n", glConfig.shading_language_string );
+	idLib::Printf( "OpenGL Extens : %s\n", glConfig.extensions_string );
+
+#endif
 	
 	// OpenGL driver constants
 	GLint temp;
@@ -1010,12 +1058,14 @@ void GL_CheckErrors()
 			case GL_INVALID_OPERATION:
 				strcpy( s, "GL_INVALID_OPERATION" );
 				break;
+#if !defined( USE_GLES3 )
 			case GL_STACK_OVERFLOW:
 				strcpy( s, "GL_STACK_OVERFLOW" );
 				break;
 			case GL_STACK_UNDERFLOW:
 				strcpy( s, "GL_STACK_UNDERFLOW" );
 				break;
+#endif
 			case GL_OUT_OF_MEMORY:
 				strcpy( s, "GL_OUT_OF_MEMORY" );
 				break;
@@ -1542,6 +1592,7 @@ Save out a screenshot showing the stencil buffer expanded by 16x range
 */
 void R_StencilShot()
 {
+#if !defined( USE_GLES3 )
 	int			i, c;
 	
 	int	width = tr.GetWidth();
@@ -1574,6 +1625,9 @@ void R_StencilShot()
 	buffer[16] = 24;	// pixel size
 	
 	fileSystem->WriteFile( "screenshots/stencilShot.tga", buffer.Ptr(), c, "fs_savepath" );
+#else
+	idLib::Printf( "R_StencilShot not supported on OpenGL ES3" );
+#endif
 }
 
 
